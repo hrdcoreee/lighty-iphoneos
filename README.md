@@ -19,6 +19,7 @@ Android app uses.
 | `Lighty/BLE/BleCentral.swift` | CoreBluetooth scan/GATT/write queue |
 | `Lighty/BLE/LightyController.swift` | Bound device, reconnect, persisted state |
 | `Lighty/Screens/` | Scan, control and diagnostics screens |
+| `Lighty/Components/TouchShield.swift` | Touch-dead strip over the home-indicator area |
 | `LightyTests/` | Hardware-independent unit tests |
 | `Scripts/pick_simulator.py` | Resolves the simulator destination at CI time |
 | `.github/workflows/ios.yml` | macOS CI: build for device, sign, package the IPA |
@@ -38,6 +39,20 @@ only: the Simulator is not on the critical path for the proof of concept.
 macOS runners are subject to capacity constraints, so a run may sit in the
 queue for a while before it starts; a `cancelled` job with the annotation "was
 not acquired by Runner of type hosted" means exactly that, not a code failure.
+
+## UI notes
+
+The app icon reproduces the Android adaptive icon as a flat 1024x1024 PNG:
+white background, the bulb tinted `#454545`, the same 0.58 scale inside the
+72/108 safe zone as `ic_launcher_foreground.xml`. iOS needs the glyph as a
+bitmap, so the vector is rasterised when the asset is produced rather than
+bundled as a vector asset.
+
+The home-indicator strip is covered by a transparent `TouchShield`, so a swipe
+home is never read as a tap on the content underneath. On the control screen
+the picker sits at the bottom of the scroll view, and that stray touch used to
+recolor the strip mid-swipe. The shield claims hit testing only and carries no
+gesture recognisers, so the system gesture is unaffected.
 
 ## Reconstruction notes
 
