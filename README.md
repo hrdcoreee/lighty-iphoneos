@@ -21,7 +21,23 @@ Android app uses.
 | `Lighty/Screens/` | Scan, control and diagnostics screens |
 | `LightyTests/` | Hardware-independent unit tests |
 | `Scripts/pick_simulator.py` | Resolves the simulator destination at CI time |
-| `.github/workflows/ios.yml` | macOS CI: generate, test, build, sign, package |
+| `.github/workflows/ios.yml` | macOS CI: build for device, sign, package the IPA |
+| `.github/workflows/tests.yml` | Manual-only macOS CI: unit tests on a simulator |
+
+## CI
+
+`.github/workflows/ios.yml` runs on push to `main` and on pull requests. It
+generates the project with XcodeGen, builds `Release` for `iphoneos` with code
+signing disabled, ad-hoc signs the `.app`, and uploads `Lighty.ipa` plus
+`xcodebuild.log` as artifacts. Read the first `error:` line in the log, not the
+trailing `exit code 65`.
+
+`.github/workflows/tests.yml` holds the unit tests. It is `workflow_dispatch`
+only: the Simulator is not on the critical path for the proof of concept.
+
+macOS runners are subject to capacity constraints, so a run may sit in the
+queue for a while before it starts; a `cancelled` job with the annotation "was
+not acquired by Runner of type hosted" means exactly that, not a code failure.
 
 ## Porting notes
 
@@ -38,4 +54,11 @@ xcodegen generate --spec project.yml
 xcodebuild -project Lighty.xcodeproj -scheme Lighty \
   -configuration Release -sdk iphoneos \
   CODE_SIGNING_ALLOWED=NO build
+```
+
+The tests need a Simulator destination:
+
+```bash
+xcodebuild test -project Lighty.xcodeproj -scheme Lighty \
+  -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
