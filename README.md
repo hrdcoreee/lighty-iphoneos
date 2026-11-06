@@ -1,6 +1,6 @@
 # lighty-iphoneos
 
-Port of the Lighty Android app to iOS: control an ELK-BLEDOM LED strip
+Reconstruction of the Lighty Android app to iOS: control an ELK-BLEDOM LED strip
 controller over Bluetooth LE.
 
 This repository currently contains the **native proof of concept** required
@@ -39,7 +39,7 @@ macOS runners are subject to capacity constraints, so a run may sit in the
 queue for a while before it starts; a `cancelled` job with the annotation "was
 not acquired by Runner of type hosted" means exactly that, not a code failure.
 
-## Porting notes
+## Reconstruction notes
 
 The Android app used a hardware MAC address as the device key. iOS never
 exposes one, so a bound strip is persisted by the CoreBluetooth
