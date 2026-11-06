@@ -7,9 +7,10 @@ import SwiftUI
 /// which on the control screen is the color picker, so swiping home silently
 /// changed the strip color. The shield absorbs that touch instead.
 ///
-/// It carries no gesture recognisers on purpose: hit testing alone stops the
-/// touch at this view, and with nothing to recognise the system's own
-/// swipe-to-home gesture is left completely untouched.
+/// Occlusion is what blocks the touch: the strip is hit-testable, so the event
+/// stops here instead of reaching the picker below. The tap handler is a no-op
+/// that exists only to make that absorption explicit; no drag recogniser is
+/// attached, so the system's own swipe-to-home gesture is untouched.
 struct TouchShield: View {
 
     /// Bottom safe-area inset of the window, in points. `0` on devices with a
@@ -22,9 +23,11 @@ struct TouchShield: View {
             Color.clear
                 .frame(maxWidth: .infinity)
                 .frame(height: height)
-                // The touch is captured here and simply goes nowhere: there is
-                // no gesture to fire, and no fall-through to the content below.
+                // The touch is captured here and goes nowhere: the no-op tap
+                // replaces "tap the picker underneath", and nothing falls
+                // through, because this view wins the hit test.
                 .contentShape(Rectangle())
+                .onTapGesture {}
                 .accessibilityHidden(true)
         }
     }
