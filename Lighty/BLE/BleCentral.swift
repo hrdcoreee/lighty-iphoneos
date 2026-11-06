@@ -318,7 +318,7 @@ extension BleCentral: CBPeripheralDelegate {
                 return
             }
 
-            self.onLog?("Services: \(services.joined(separator: ", "))")
+            self.log("Services: \(services.joined(separator: ", "))")
 
             guard let service = peripheral.services?
                 .first(where: { $0.uuid == CBUUID(string: ElkProtocol.serviceUUID) })
@@ -353,7 +353,7 @@ extension BleCentral: CBPeripheralDelegate {
                 return
             }
 
-            self.onLog?("Characteristics: \(characteristics.joined(separator: ", "))")
+            self.log("Characteristics: \(characteristics.joined(separator: ", "))")
 
             guard let match else {
                 self.onLog?("Write characteristic \(ElkProtocol.writeCharacteristicUUID) not found", .error)
@@ -394,7 +394,7 @@ extension BleCentral: CBPeripheralDelegate {
                 return
             }
             if let value {
-                self.onLog?("Notify \(uuid): \(ElkProtocol.hexString([UInt8](value)))")
+                self.log("Notify \(uuid): \(ElkProtocol.hexString([UInt8](value)))")
             }
         }
     }
@@ -432,7 +432,7 @@ extension BleCentral: CBPeripheralDelegate {
             if let errorDescription {
                 self.onLog?("Notify state error on \(uuid): \(errorDescription)", .error)
             } else {
-                self.onLog?("Notify \(isNotifying ? "enabled" : "disabled") on \(uuid)")
+                self.log("Notify \(isNotifying ? "enabled" : "disabled") on \(uuid)")
             }
         }
     }

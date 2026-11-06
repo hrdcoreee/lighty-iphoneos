@@ -75,7 +75,7 @@ private struct SaturationValuePanel: View {
                 guard isEnabled, size.width > 0, size.height > 0 else { return }
                 let s = min(max(value.location.x / size.width, 0), 1)
                 let v = min(max(1 - value.location.y / size.height, 0), 1)
-                onChange(s, v)
+                onChange(Double(s), Double(v))
             }
     }
 }
@@ -97,7 +97,7 @@ private struct HueBar: View {
                 LinearGradient(colors: spectrum, startPoint: .leading, endPoint: .trailing)
 
                 Thumb(fill: HSVColor(hue: hue, saturation: 1, brightness: 1).swiftUIColor)
-                    .position(x: min(max(hue / 360, 0), 1) * size.width, y: size.height / 2)
+                    .position(x: CGFloat(min(max(hue / 360, 0), 1)) * size.width, y: size.height / 2)
             }
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(
@@ -109,7 +109,7 @@ private struct HueBar: View {
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
                         guard isEnabled, size.width > 0 else { return }
-                        onHueChange(min(max(value.location.x / size.width, 0), 1) * 360)
+                        onHueChange(Double(min(max(value.location.x / size.width, 0), 1)) * 360)
                     }
             )
             .opacity(isEnabled ? 1 : 0.6)

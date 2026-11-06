@@ -59,14 +59,17 @@ final class LightyController: ObservableObject {
         static let backgroundIdleTimeout: UInt64 = 15_000_000_000
     }
 
+    /// `central` and `log` are injected rather than defaulted in the signature:
+    /// a default argument expression is evaluated in a nonisolated context and
+    /// cannot touch the main-actor isolated `BleCentral`/`DiagnosticsLog`.
     init(
         defaults: UserDefaults = .standard,
-        central: BleCentral = BleCentral(),
-        log: DiagnosticsLog = .shared
+        central: BleCentral? = nil,
+        log: DiagnosticsLog? = nil
     ) {
         self.defaults = defaults
-        self.central = central
-        self.log = log
+        self.central = central ?? BleCentral()
+        self.log = log ?? .shared
 
         self.isOn = defaults.bool(forKey: Keys.power)
         self.hsv = HSVColor(
