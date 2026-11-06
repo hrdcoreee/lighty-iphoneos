@@ -4,6 +4,7 @@ import SwiftUI
 struct ControlScreen: View {
     @EnvironmentObject private var controller: LightyController
     let strings: Strings
+    let onOpenSettings: () -> Void
 
     private var isOnline: Bool { controller.connectionState == .connected }
 
@@ -67,19 +68,16 @@ struct ControlScreen: View {
                 )
                 .padding(.vertical, 4)
             }
-
-            if controller.boundDevice != nil {
-                Section {
-                    Button(role: .destructive) {
-                        controller.unbind()
-                    } label: {
-                        Label(strings.disconnect, systemImage: "xmark.circle")
-                    }
-                }
-            }
         }
         .listStyle(.insetGrouped)
         .navigationTitle(strings.controlTitle)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: onOpenSettings) {
+                    Label(strings.settingsTitle, systemImage: "gearshape")
+                }
+            }
+        }
     }
 
     private func isCurrent(_ preset: HSVColor) -> Bool {

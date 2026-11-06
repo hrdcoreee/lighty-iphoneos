@@ -33,6 +33,7 @@ final class LightyController: ObservableObject {
     private let central: BleCentral
     private let defaults: UserDefaults
     private let log: DiagnosticsLog
+    private let boundStore: BoundDeviceStore
 
     // MARK: Private state
 
@@ -47,8 +48,6 @@ final class LightyController: ObservableObject {
         static let hue = "lighty.hue"
         static let saturation = "lighty.saturation"
         static let value = "lighty.value"
-        static let boundID = "lighty.bound.id"
-        static let boundName = "lighty.bound.name"
         static let showAllDevices = "lighty.showAllDevices"
     }
 
@@ -70,6 +69,7 @@ final class LightyController: ObservableObject {
         self.defaults = defaults
         self.central = central ?? BleCentral()
         self.log = log ?? .shared
+        self.boundStore = BoundDeviceStore(defaults: defaults)
 
         self.isOn = defaults.bool(forKey: Keys.power)
         self.hsv = HSVColor(
@@ -78,7 +78,7 @@ final class LightyController: ObservableObject {
             brightness: defaults.object(forKey: Keys.value) as? Double ?? 1
         )
         self.showAllDevices = defaults.bool(forKey: Keys.showAllDevices)
-        self.boundDevice = Self.readBoundDevice(defaults: defaults)
+        self.boundDevice = boundStore.current
 
         wireCallbacks()
 
@@ -189,8 +189,8 @@ final class LightyController: ObservableObject {
     func bindAndConnect(_ device: ScannedDevice) {
         let bound = BoundDevice(id: device.id, name: device.name)
         boundDevice = bound
-        defaults.set(bound.id.uuidString, forKey: Keys.boundID)
-        defaults.set(bound.name, forKey: Keys.boundName)
+        // Written once here and never rewritten: the pairing survives relaunch.
+        boundStore.save(bound)
         log.log("Bound device \(device.name ?? device.id.uuidString)")
 
         // A peripheral handle for an identifier only exists after discovery, so
@@ -203,16 +203,9 @@ final class LightyController: ObservableObject {
         boundPingTask?.cancel()
         boundPingTask = nil
         boundDevice = nil
-        defaults.removeObject(forKey: Keys.boundID)
-        defaults.removeObject(forKey: Keys.boundName)
+        boundStore.clear()
         central.disconnect()
         startScan()
-    }
-
-    func disconnect() {
-        boundPingTask?.cancel()
-        boundPingTask = nil
-        central.disconnect()
     }
 
     private func connectBound() {
@@ -354,10 +347,4 @@ final class LightyController: ObservableObject {
         defaults.set(hsv.brightness, forKey: Keys.value)
     }
 
-    private static func readBoundDevice(defaults: UserDefaults) -> BoundDevice? {
-        guard let raw = defaults.string(forKey: Keys.boundID), let id = UUID(uuidString: raw) else {
-            return nil
-        }
-        return BoundDevice(id: id, name: defaults.string(forKey: Keys.boundName))
-    }
 }

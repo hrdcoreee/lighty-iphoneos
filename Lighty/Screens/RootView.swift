@@ -1,36 +1,35 @@
 import SwiftUI
 
-/// Root tab bar. The control tab is shown only once a device has been bound,
-/// mirroring the Android navigation flow (scan first, then control).
+/// Root flow, mirroring the Android navigation: the pairing screen is the only
+/// entry point until a strip is bound, and a bound strip is remembered forever
+/// so every later launch lands straight on the control screen. There is no tab
+/// bar; settings is an overlay available from both screens.
 struct RootView: View {
     @EnvironmentObject private var controller: LightyController
+
+    @State private var showSettings = false
 
     private let strings = Locale.lightyStrings
 
     var body: some View {
-        TabView {
-            NavigationStack {
-                ScanScreen(strings: strings)
-            }
-            .tabItem {
-                Label(strings.scan, systemImage: "dot.radiowaves.left.and.right")
-            }
-
-            if controller.boundDevice != nil {
+        Group {
+            if controller.boundDevice == nil {
                 NavigationStack {
-                    ControlScreen(strings: strings)
+                    ScanScreen(strings: strings, onOpenSettings: { showSettings = true })
                 }
-                .tabItem {
-                    Label(strings.controlTitle, systemImage: "slider.horizontal.3")
+                .transition(.opacity)
+            } else {
+                NavigationStack {
+                    ControlScreen(strings: strings, onOpenSettings: { showSettings = true })
                 }
+                .transition(.opacity)
             }
-
-            NavigationStack {
-                DiagnosticsScreen(strings: strings)
-            }
-            .tabItem {
-                Label(strings.diagnosticsTitle, systemImage: "waveform.path.ecg")
-            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: controller.boundDevice)
+        .sheet(isPresented: $showSettings) {
+            // Passed explicitly rather than relying on environment inheritance.
+            SettingsSheet(strings: strings)
+                .environmentObject(controller)
         }
     }
 }

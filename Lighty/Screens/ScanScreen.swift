@@ -1,12 +1,14 @@
 import CoreBluetooth
 import SwiftUI
 
-/// Discovery screen: scan for nearby ELK controllers and bind one.
+/// Pairing screen: the first thing the app shows, and the only screen until a
+/// strip is bound. Discovery starts automatically, mirroring the Android
+/// `LaunchedEffect(boundDevice == null) { startScan() }`.
 struct ScanScreen: View {
     @EnvironmentObject private var controller: LightyController
-    @ObservedObject private var log = DiagnosticsLog.shared
 
     let strings: Strings
+    let onOpenSettings: () -> Void
 
     var body: some View {
         List {
@@ -34,17 +36,15 @@ struct ScanScreen: View {
                     }
                 }
             }
-
-            Section {
-                Toggle(strings.showAllDevices, isOn: Binding(
-                    get: { controller.showAllDevices },
-                    set: { controller.showAllDevices = $0 }
-                ))
-            }
         }
         .listStyle(.insetGrouped)
         .navigationTitle(strings.scanTitle)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: onOpenSettings) {
+                    Label(strings.settingsTitle, systemImage: "gearshape")
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(controller.scanning ? strings.stopScan : strings.scan) {
                     controller.toggleScan()
@@ -52,6 +52,14 @@ struct ScanScreen: View {
                 .disabled(controller.bluetoothState != .poweredOn)
             }
         }
+        .onAppear { startScanIfReady() }
+        .onChange(of: controller.bluetoothState) { _ in startScanIfReady() }
+    }
+
+    /// Scanning is idempotent in `LightyController`, so a redundant call is safe.
+    private func startScanIfReady() {
+        guard !controller.scanning, controller.isBluetoothReady else { return }
+        controller.startScan()
     }
 
     private var header: some View {
@@ -83,7 +91,7 @@ private struct DeviceRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(device.name ?? strings.unknownDevice)
                     .font(.body)
-                Text(device.id.uuidString.prefix(8) + "…")
+                Text(device.id.uuidString.prefix(8) + "...")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

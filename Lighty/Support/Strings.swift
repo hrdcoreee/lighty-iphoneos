@@ -18,7 +18,6 @@ struct Strings {
     var connected: String
     var connecting: String
     var offline: String
-    var disconnect: String
 
     var powerLabel: String
     var brightnessLabel: String
@@ -30,14 +29,25 @@ struct Strings {
     var copyDiagnostics: String
     var clearLog: String
     var showAllDevices: String
+    var showAllDevicesDesc: String
+
+    var settingsTitle: String
+    var done: String
+    var deviceSection: String
+    var unbind: String
+    var unbindDesc: String
+    var noStripBound: String
+    var aboutSection: String
+    var versionLabel: String
+    var aboutDescription: String
 
     static let english = Strings(
         scanTitle: "Lighty",
-        scanSubtitle: "Connect your ELK-BLEDOM LED strip",
+        scanSubtitle: "Find your light strip",
         scan: "Scan",
         stopScan: "Stop",
-        searching: "Searching for controllers...",
-        readyToScan: "Tap Scan to look for nearby controllers",
+        searching: "Searching for devices...",
+        readyToScan: "Ready to scan",
         unknownDevice: "Unknown device",
         devicesFound: { "\($0) device(s) found" },
         bluetoothOffTitle: "Bluetooth is off",
@@ -46,7 +56,6 @@ struct Strings {
         connected: "Connected",
         connecting: "Connecting...",
         offline: "Offline",
-        disconnect: "Disconnect",
         powerLabel: "Power",
         brightnessLabel: "Brightness",
         quickColors: "Quick colors",
@@ -55,16 +64,26 @@ struct Strings {
         diagnosticsEmpty: "No log entries yet.",
         copyDiagnostics: "Copy log",
         clearLog: "Clear",
-        showAllDevices: "Show all Bluetooth devices"
+        showAllDevices: "Show all Bluetooth devices",
+        showAllDevicesDesc: "Scan for any BLE device, not only strip controllers",
+        settingsTitle: "Settings",
+        done: "Done",
+        deviceSection: "Strip",
+        unbind: "Unbind",
+        unbindDesc: "Unbind and choose another strip",
+        noStripBound: "No strip paired yet",
+        aboutSection: "About",
+        versionLabel: "Version",
+        aboutDescription: "Bluetooth LED strip control"
     )
 
     static let russian = Strings(
         scanTitle: "Lighty",
-        scanSubtitle: "Подключите LED-ленту ELK-BLEDOM",
-        scan: "Поиск",
-        stopScan: "Стоп",
-        searching: "Поиск контроллеров...",
-        readyToScan: "Нажмите «Поиск», чтобы найти контроллеры рядом",
+        scanSubtitle: "Найдите вашу подсветку",
+        scan: "Сканировать",
+        stopScan: "Остановить",
+        searching: "Идёт поиск устройств...",
+        readyToScan: "Готово к поиску",
         unknownDevice: "Неизвестное устройство",
         devicesFound: { "Найдено устройств: \($0)" },
         bluetoothOffTitle: "Bluetooth выключен",
@@ -73,7 +92,6 @@ struct Strings {
         connected: "Подключено",
         connecting: "Подключение...",
         offline: "Не в сети",
-        disconnect: "Отключить",
         powerLabel: "Питание",
         brightnessLabel: "Яркость",
         quickColors: "Быстрые цвета",
@@ -82,7 +100,17 @@ struct Strings {
         diagnosticsEmpty: "Записей пока нет.",
         copyDiagnostics: "Копировать лог",
         clearLog: "Очистить",
-        showAllDevices: "Показывать все Bluetooth-устройства"
+        showAllDevices: "Показывать все Bluetooth-устройства",
+        showAllDevicesDesc: "Искать любые BLE-устройства, а не только контроллеры ленты",
+        settingsTitle: "Настройки",
+        done: "Готово",
+        deviceSection: "Лента",
+        unbind: "Отвязать",
+        unbindDesc: "Отвязать и выбрать другую ленту",
+        noStripBound: "Лента ещё не сопряжена",
+        aboutSection: "О приложении",
+        versionLabel: "Версия",
+        aboutDescription: "Управление LED-лентой по Bluetooth"
     )
 }
 
