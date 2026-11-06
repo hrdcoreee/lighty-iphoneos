@@ -1,0 +1,18 @@
+# Xcode / XcodeGen
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.moved-aside
+
+# CI logs and diagnostics
+xcodebuild.log
+xcodebuild-test.log
+*-entitlements.plist
+app-info.txt
+
+# macOS
+.DS_Store

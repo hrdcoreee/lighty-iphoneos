@@ -1,0 +1,207 @@
+name: iOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build & test (simulator + device)
+    runs-on: macos-15
+    timeout-minutes: 40
+
+    env:
+      SCHEME: Lighty
+      PROJECT: Lighty.xcodeproj
+      APP_NAME: Lighty
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------------
+      # CI helper logic is plain Python so it can be unit tested without macOS.
+      # ---------------------------------------------------------------------
+      - name: Test CI helper scripts
+        id: helpers
+        run: python3 Scripts/test_pick_simulator.py
+
+      - name: Report toolchain
+        run: |
+          # Do not unconditionally run `xcode-select -s`: runner images install
+          # versioned bundles (Xcode_16.x.app) and only alias the newest one.
+          if [ -d /Applications/Xcode.app ]; then
+            sudo xcode-select -s /Applications/Xcode.app
+          fi
+          xcode-select -p
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Install XcodeGen
+        run: |
+          brew update --quiet || true
+          brew install xcodegen
+          xcodegen --version
+
+      - name: Generate Xcode project
+        run: |
+          xcodegen generate --spec project.yml
+          ls -la
+          xcodebuild -list -project "$PROJECT"
+
+      # A hardcoded `name=iPhone 16` breaks as soon as a runner image drops that
+      # device, so the destination is resolved from the machine itself.
+      - name: Pick a simulator destination
+        id: sim
+        run: |
+          set -eu
+          UDID=$(xcrun simctl list devices available -j | python3 Scripts/pick_simulator.py)
+          if [ -z "$UDID" ]; then
+            echo "::error::No available iPhone simulator found"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "destination=platform=iOS Simulator,id=$UDID" >> "$GITHUB_OUTPUT"
+          echo "Using simulator $UDID"
+
+      # ---------------------------------------------------------------------
+      # Unit tests. These cover the pure logic (ELK frame encoding, HSV -> RGB,
+      # scan filtering, version compare) and need no Bluetooth hardware.
+      # ---------------------------------------------------------------------
+      - name: Run unit tests (simulator)
+        id: test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination '${{ steps.sim.outputs.destination }}' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            2>&1 | tee xcodebuild-test.log
+
+      # ---------------------------------------------------------------------
+      # Physical-device build. This is the artefact that matters for the BLE
+      # proof of concept: it validates the arm64 compile and bakes in the
+      # `bluetooth-central` background mode.
+      # ---------------------------------------------------------------------
+      - name: Build for device (Release, unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build \
+            2>&1 | tee xcodebuild.log
+
+      - name: Locate app bundle
+        id: app
+        run: |
+          APP="build/DerivedData/Build/Products/Release-iphoneos/${APP_NAME}.app"
+          if [ ! -d "$APP" ]; then
+            echo "::error::App bundle not found at $APP"
+            find build/DerivedData/Build/Products -maxdepth 2 -name '*.app' || true
+            exit 1
+          fi
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+          echo "Found $APP"
+          /usr/libexec/PlistBuddy -c 'Print :UIBackgroundModes' "$APP/Info.plist" || true
+          /usr/libexec/PlistBuddy -c 'Print :NSBluetoothAlwaysUsageDescription' "$APP/Info.plist" || true
+
+      # ---------------------------------------------------------------------
+      # Ad-hoc signing for jailbreak / sideload-only test devices.
+      #
+      # `codesign -d --entitlements :-` prints a leading `Executable=...`
+      # diagnostic line before the XML, so the XML is extracted before it is
+      # fed to plutil.
+      # ---------------------------------------------------------------------
+      - name: Ad-hoc sign and inspect entitlements
+        id: sign
+        continue-on-error: true
+        run: |
+          APP='${{ steps.app.outputs.app }}'
+
+          extract_entitlements() {
+            codesign -d --entitlements :- "$1" 2>&1 | sed -n '/<?xml/,/<\/plist>/p'
+          }
+
+          codesign --force --sign - --entitlements Config/Lighty.entitlements "$APP"
+          codesign -dv --verbose=4 "$APP" 2>&1 | tee codesign-info.txt || true
+
+          extract_entitlements "$APP" > app-entitlements.plist
+          if [ -s app-entitlements.plist ]; then
+            plutil -convert xml1 app-entitlements.plist
+            plutil -p app-entitlements.plist
+          else
+            echo "No entitlements embedded (expected without a provisioning profile)." \
+              | tee app-entitlements.plist
+          fi
+
+      - name: Package IPA
+        id: ipa
+        continue-on-error: true
+        run: |
+          APP='${{ steps.app.outputs.app }}'
+          mkdir -p build/Payload
+          cp -R "$APP" build/Payload/
+          ditto -c -k --sequesterRsrc --keepParent build/Payload "${APP_NAME}.ipa"
+          ls -lh "${APP_NAME}.ipa"
+          echo "ipa=${APP_NAME}.ipa" >> "$GITHUB_OUTPUT"
+
+      # ---------------------------------------------------------------------
+      # Artifacts. Always uploaded so a failing run still leaves the log that
+      # explains the first real `error:` line, not just `exit code 65`.
+      # ---------------------------------------------------------------------
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: |
+            xcodebuild.log
+            xcodebuild-test.log
+            codesign-info.txt
+            *-entitlements.plist
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload IPA
+        if: always() && steps.ipa.outputs.ipa != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipa
+          path: ${{ steps.ipa.outputs.ipa }}
+          if-no-files-found: warn
+          retention-days: 14
+
+      # Signing and IPA packaging are diagnostics on the jailbreak path; only a
+      # real test or build failure should turn the job red.
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### iOS build"
+            echo ""
+            echo "| Step | Outcome |"
+            echo "| --- | --- |"
+            echo "| CI helper scripts | ${{ steps.helpers.outcome }} |"
+            echo "| Unit tests (simulator) | ${{ steps.test.outcome }} |"
+            echo "| Device build | ${{ steps.app.outcome }} |"
+            echo "| Ad-hoc signing | ${{ steps.sign.outcome }} |"
+            echo "| IPA packaging | ${{ steps.ipa.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
