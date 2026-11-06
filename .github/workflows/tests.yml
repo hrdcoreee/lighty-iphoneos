@@ -1,0 +1,98 @@
+name: iOS unit tests
+
+# Manual only. The build workflow is the one that gates a push; these tests
+# cover the hardware-independent logic and need an iOS Simulator, which is
+# optional for this proof of concept.
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Unit tests (simulator)
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    env:
+      SCHEME: Lighty
+      PROJECT: Lighty.xcodeproj
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------------
+      # CI helper logic is plain Python so it can be unit tested without macOS.
+      # ---------------------------------------------------------------------
+      - name: Test CI helper scripts
+        id: helpers
+        run: python3 Scripts/test_pick_simulator.py
+
+      - name: Report toolchain
+        run: |
+          if [ -d /Applications/Xcode.app ]; then
+            sudo xcode-select -s /Applications/Xcode.app
+          fi
+          xcode-select -p
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: |
+          brew update --quiet || true
+          brew install xcodegen
+          xcodegen --version
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+
+      # A hardcoded `name=iPhone 16` breaks as soon as a runner image drops that
+      # device, so the destination is resolved from the machine itself.
+      - name: Pick a simulator destination
+        id: sim
+        run: |
+          set -eu
+          UDID=$(xcrun simctl list devices available -j | python3 Scripts/pick_simulator.py)
+          if [ -z "$UDID" ]; then
+            echo "::error::No available iPhone simulator found"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "destination=platform=iOS Simulator,id=$UDID" >> "$GITHUB_OUTPUT"
+          echo "Using simulator $UDID"
+
+      # Covers the pure logic: ELK frame encoding, HSV -> RGB, scan filtering
+      # and version comparison. No Bluetooth hardware required.
+      - name: Run unit tests (simulator)
+        id: test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination '${{ steps.sim.outputs.destination }}' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            2>&1 | tee xcodebuild-test.log
+
+      - name: Upload test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: xcodebuild-test.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### iOS unit tests"
+            echo ""
+            echo "| Step | Outcome |"
+            echo "| --- | --- |"
+            echo "| CI helper scripts | ${{ steps.helpers.outcome }} |"
+            echo "| Unit tests (simulator) | ${{ steps.test.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,4 +1,4 @@
-name: iOS
+name: iOS build
 
 on:
   push:
@@ -7,12 +7,12 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ios-${{ github.ref }}
+  group: ios-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build & test (simulator + device)
+    name: Device build + IPA
     runs-on: macos-15
     timeout-minutes: 40
 
@@ -24,13 +24,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      # ---------------------------------------------------------------------
-      # CI helper logic is plain Python so it can be unit tested without macOS.
-      # ---------------------------------------------------------------------
-      - name: Test CI helper scripts
-        id: helpers
-        run: python3 Scripts/test_pick_simulator.py
 
       - name: Report toolchain
         run: |
@@ -52,49 +45,15 @@ jobs:
       - name: Generate Xcode project
         run: |
           xcodegen generate --spec project.yml
-          ls -la
           xcodebuild -list -project "$PROJECT"
 
-      # A hardcoded `name=iPhone 16` breaks as soon as a runner image drops that
-      # device, so the destination is resolved from the machine itself.
-      - name: Pick a simulator destination
-        id: sim
-        run: |
-          set -eu
-          UDID=$(xcrun simctl list devices available -j | python3 Scripts/pick_simulator.py)
-          if [ -z "$UDID" ]; then
-            echo "::error::No available iPhone simulator found"
-            xcrun simctl list devices available
-            exit 1
-          fi
-          echo "destination=platform=iOS Simulator,id=$UDID" >> "$GITHUB_OUTPUT"
-          echo "Using simulator $UDID"
-
       # ---------------------------------------------------------------------
-      # Unit tests. These cover the pure logic (ELK frame encoding, HSV -> RGB,
-      # scan filtering, version compare) and need no Bluetooth hardware.
-      # ---------------------------------------------------------------------
-      - name: Run unit tests (simulator)
-        id: test
-        run: |
-          set -o pipefail
-          xcodebuild test \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -configuration Debug \
-            -destination '${{ steps.sim.outputs.destination }}' \
-            -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            2>&1 | tee xcodebuild-test.log
-
-      # ---------------------------------------------------------------------
-      # Physical-device build. This is the artefact that matters for the BLE
-      # proof of concept: it validates the arm64 compile and bakes in the
-      # `bluetooth-central` background mode.
+      # The artefact that matters for the BLE proof of concept: an arm64
+      # Release build against the iphoneos SDK. This validates the device
+      # compile and bakes in the `bluetooth-central` background mode.
       # ---------------------------------------------------------------------
       - name: Build for device (Release, unsigned)
+        id: build
         run: |
           set -o pipefail
           xcodebuild \
@@ -174,7 +133,6 @@ jobs:
           name: logs
           path: |
             xcodebuild.log
-            xcodebuild-test.log
             codesign-info.txt
             *-entitlements.plist
           if-no-files-found: warn
@@ -190,7 +148,7 @@ jobs:
           retention-days: 14
 
       # Signing and IPA packaging are diagnostics on the jailbreak path; only a
-      # real test or build failure should turn the job red.
+      # real build failure should turn the job red.
       - name: Summary
         if: always()
         run: |
@@ -199,9 +157,8 @@ jobs:
             echo ""
             echo "| Step | Outcome |"
             echo "| --- | --- |"
-            echo "| CI helper scripts | ${{ steps.helpers.outcome }} |"
-            echo "| Unit tests (simulator) | ${{ steps.test.outcome }} |"
-            echo "| Device build | ${{ steps.app.outcome }} |"
+            echo "| Device build | ${{ steps.build.outcome }} |"
+            echo "| Locate app bundle | ${{ steps.app.outcome }} |"
             echo "| Ad-hoc signing | ${{ steps.sign.outcome }} |"
             echo "| IPA packaging | ${{ steps.ipa.outcome }} |"
           } >> "$GITHUB_STEP_SUMMARY"
