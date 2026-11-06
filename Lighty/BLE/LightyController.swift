@@ -83,7 +83,7 @@ final class LightyController: ObservableObject {
         wireCallbacks()
 
         if boundDevice != nil {
-            log.log("Bound device restored; connecting on launch")
+            self.log.log("Bound device restored; connecting on launch")
             connectBound()
         }
     }
