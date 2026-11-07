@@ -150,7 +150,7 @@ extension Locale {
                 return false
             }
         }
-        if let code = Locale.current.language.languageCode?.identifier?.lowercased(), code == "ru" {
+        if let code = Locale.current.language.languageCode?.identifier.lowercased(), code == "ru" {
             return true
         }
         if Locale.current.identifier.lowercased().hasPrefix("ru") {
