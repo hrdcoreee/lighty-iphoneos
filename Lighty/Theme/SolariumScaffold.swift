@@ -23,20 +23,21 @@ struct SolariumScaffold<Content: View>: View {
                 content
             }
             .padding(.horizontal, 16)
-            .padding(.top, 8)
+            .padding(.top, 4)
             // Leave room for the home indicator so the last card can be
             // scrolled fully clear of it.
             .padding(.bottom, 32)
         }
         .scrollIndicators(.hidden)
-        .background(.clear)
+        .scrollContentBackground(.hidden)
+        .background(SolariumBackground())
         // The navigation bar sits over the wash; an opaque bar would cut a
         // hard rectangle through it.
         .toolbarBackground(.hidden, for: .navigationBar)
     }
 }
 
-/// A titled group of content, drawn as one glass card.
+/// An Apple HIG-compliant grouped card container: section title sits above the card.
 struct SolariumCard<Content: View>: View {
 
     let title: String?
@@ -50,17 +51,19 @@ struct SolariumCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             if let title {
                 Text(title.uppercased())
-                    .font(.caption.weight(.semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 4)
             }
-            content
+            VStack(alignment: .leading, spacing: 10) {
+                content
+            }
+            .padding(SolariumTheme.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassSurface(cornerRadius: SolariumTheme.cornerRadius, tint: tint)
         }
-        .padding(SolariumTheme.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassSurface(tint: tint)
     }
 }

@@ -53,9 +53,14 @@ private struct SaturationValuePanel: View {
 
     @State private var isDragging = false
 
+    private let thumbRadius: CGFloat = 14
+
     var body: some View {
         GeometryReader { geometry in
             let size = geometry.size
+            let insetW = max(size.width - thumbRadius * 2, 1)
+            let insetH = max(size.height - thumbRadius * 2, 1)
+
             ZStack(alignment: .topLeading) {
                 LinearGradient(
                     colors: [.white, HSVColor(hue: hue, saturation: 1, brightness: 1).swiftUIColor],
@@ -68,16 +73,16 @@ private struct SaturationValuePanel: View {
                     endPoint: .bottom
                 )
 
-                let x = min(max(saturation, 0), 1) * size.width
-                let y = (1 - min(max(brightness, 0), 1)) * size.height
+                let x = thumbRadius + min(max(saturation, 0), 1) * insetW
+                let y = thumbRadius + (1 - min(max(brightness, 0), 1)) * insetH
 
                 Thumb(fill: HSVColor(hue: hue, saturation: saturation, brightness: brightness).swiftUIColor)
                     .position(x: x, y: y)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .strokeBorder(Color.secondary.opacity(isEnabled ? 0.4 : 0.15), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
             )
             .contentShape(Rectangle())
             .gesture(gesture(in: size))
@@ -106,8 +111,10 @@ private struct SaturationValuePanel: View {
     }
 
     private func report(_ point: CGPoint, in size: CGSize) {
-        let s = min(max(point.x / size.width, 0), 1)
-        let v = min(max(1 - point.y / size.height, 0), 1)
+        let insetW = max(size.width - thumbRadius * 2, 1)
+        let insetH = max(size.height - thumbRadius * 2, 1)
+        let s = min(max((point.x - thumbRadius) / insetW, 0), 1)
+        let v = min(max(1 - (point.y - thumbRadius) / insetH, 0), 1)
         onChange(Double(s), Double(v))
     }
 }
@@ -124,19 +131,24 @@ private struct HueBar: View {
             .map { HSVColor(hue: $0, saturation: 1, brightness: 1).swiftUIColor }
     }
 
+    private let thumbRadius: CGFloat = 14
+
     var body: some View {
         GeometryReader { geometry in
             let size = geometry.size
+            let insetW = max(size.width - thumbRadius * 2, 1)
+
             ZStack(alignment: .topLeading) {
                 LinearGradient(colors: spectrum, startPoint: .leading, endPoint: .trailing)
 
+                let x = thumbRadius + CGFloat(min(max(hue / 360, 0), 1)) * insetW
                 Thumb(fill: HSVColor(hue: hue, saturation: 1, brightness: 1).swiftUIColor)
-                    .position(x: CGFloat(min(max(hue / 360, 0), 1)) * size.width, y: size.height / 2)
+                    .position(x: x, y: size.height / 2)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .strokeBorder(Color.secondary.opacity(isEnabled ? 0.4 : 0.15), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
             )
             .contentShape(Rectangle())
             .gesture(gesture(in: size))
@@ -164,7 +176,9 @@ private struct HueBar: View {
     }
 
     private func report(_ point: CGPoint, in size: CGSize) {
-        onHueChange(Double(min(max(point.x / size.width, 0), 1)) * 360)
+        let insetW = max(size.width - thumbRadius * 2, 1)
+        let fraction = min(max((point.x - thumbRadius) / insetW, 0), 1)
+        onHueChange(Double(fraction) * 360)
     }
 }
 

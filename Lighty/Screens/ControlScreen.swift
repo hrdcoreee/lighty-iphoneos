@@ -56,17 +56,25 @@ struct ControlScreen: View {
             controller.togglePower()
         } label: {
             Image(systemName: "power")
-                .font(.system(size: 20, weight: .semibold))
-                .frame(width: 44, height: 44)
+                .font(.system(size: 22, weight: .semibold))
+                .frame(width: 48, height: 48)
                 .foregroundStyle(controller.isOn ? Color.white : Color.secondary)
                 .background {
-                    if controller.isOn {
-                        Circle().fill(Color.accentColor)
-                    }
+                    Circle()
+                        .fill(controller.isOn ? Color.accentColor : Color(uiColor: .tertiarySystemFill))
                 }
+                .overlay {
+                    Circle()
+                        .strokeBorder(Color.white.opacity(controller.isOn ? 0.25 : 0.08), lineWidth: 1)
+                }
+                .shadow(
+                    color: controller.isOn ? Color.accentColor.opacity(0.35) : Color.clear,
+                    radius: 8,
+                    x: 0,
+                    y: 2
+                )
         }
         .buttonStyle(.plain)
-        .glassSurface(cornerRadius: 22, tint: controller.isOn ? .accentColor : nil)
         .disabled(controller.boundDevice == nil)
         .accessibilityLabel(strings.powerLabel)
     }

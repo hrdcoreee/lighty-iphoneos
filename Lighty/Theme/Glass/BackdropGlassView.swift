@@ -9,10 +9,10 @@ import UIKit
 struct BackdropGlassView: UIViewRepresentable {
 
     var cornerRadius: CGFloat = SolariumTheme.cornerRadius
-    var edgeBand: CGFloat = 14
-    var displacement: CGFloat = 16
-    var blurRadius: CGFloat = 2.5
-    var saturation: CGFloat = 1.35
+    var edgeBand: CGFloat = 10
+    var displacement: CGFloat = 10
+    var blurRadius: CGFloat = 18
+    var saturation: CGFloat = 1.25
     var useTelegramMatrix: Bool = true
     var tint: UIColor? = nil
 
@@ -64,10 +64,10 @@ final class BackdropGlassUIView: UIView {
     private var appliedKey: MeshKey?
 
     private var cornerRadius: CGFloat = SolariumTheme.cornerRadius
-    private var edgeBand: CGFloat = 14
-    private var displacement: CGFloat = 16
-    private var blurRadius: CGFloat = 2.5
-    private var saturation: CGFloat = 1.35
+    private var edgeBand: CGFloat = 10
+    private var displacement: CGFloat = 10
+    private var blurRadius: CGFloat = 18
+    private var saturation: CGFloat = 1.25
     private var useTelegramMatrix: Bool = true
     private var tint: UIColor?
 
@@ -93,17 +93,13 @@ final class BackdropGlassUIView: UIView {
 
         layer.addSublayer(tintLayer)
 
-        // Diagonal specular highlights matching Telegram's dual-rim bevel:
-        // top-left light catch (white 0.35) and bottom-right rim reflection (white 0.18).
+        // Subtle specular top edge in line with Apple HIG
         highlightLayer.colors = [
-            UIColor.white.withAlphaComponent(0.35).cgColor,
             UIColor.white.withAlphaComponent(0.08).cgColor,
             UIColor.white.withAlphaComponent(0.0).cgColor,
-            UIColor.white.withAlphaComponent(0.18).cgColor,
         ]
-        highlightLayer.locations = [0.0, 0.22, 0.72, 1.0]
-        highlightLayer.startPoint = CGPoint(x: 0.0, y: 0.0)
-        highlightLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
+        highlightLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
+        highlightLayer.endPoint = CGPoint(x: 0.5, y: 0.18)
         layer.addSublayer(highlightLayer)
     }
 

@@ -33,22 +33,20 @@ struct GlassSurface: ViewModifier {
                         .strokeBorder(
                             LinearGradient(
                                 colors: [
-                                    .white.opacity(0.35),
-                                    .white.opacity(0.10),
-                                    .white.opacity(0.04),
-                                    .white.opacity(0.18)
+                                    .white.opacity(0.12),
+                                    .white.opacity(0.04)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
-                            lineWidth: 1
+                            lineWidth: 0.5
                         )
                 }
                 .shadow(
-                    color: .black.opacity(0.16),
-                    radius: 16,
+                    color: .black.opacity(0.10),
+                    radius: 12,
                     x: 0,
-                    y: 8
+                    y: 4
                 )
         }
     }
@@ -58,12 +56,12 @@ struct GlassSurface: ViewModifier {
         if PrivateGlassAPI.isBackdropAvailable {
             BackdropGlassView(
                 cornerRadius: cornerRadius,
-                edgeBand: min(14, cornerRadius),
-                displacement: 16,
-                blurRadius: 2.5,
-                saturation: 1.35,
+                edgeBand: min(10, cornerRadius),
+                displacement: 10,
+                blurRadius: 18,
+                saturation: 1.25,
                 useTelegramMatrix: true,
-                tint: tint.map { UIColor($0).withAlphaComponent(0.12) } ?? UIColor(white: 1.0, alpha: 0.04)
+                tint: tint.map { UIColor($0).withAlphaComponent(0.10) } ?? UIColor(white: 1.0, alpha: 0.04)
             )
         } else {
             fallbackSurface

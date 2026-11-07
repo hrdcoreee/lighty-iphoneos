@@ -1,27 +1,26 @@
 import SwiftUI
 
 /// Design tokens for the "solarium" look: bright, airy surfaces floating over a
-/// slowly drifting color wash.
+/// slowly drifting color wash, strictly following Apple Human Interface Guidelines.
 enum SolariumTheme {
 
-    /// Card corner radius. Matches the picker corners so the screen reads as one
-    /// system rather than a list with rounded boxes in it.
-    static let cornerRadius: CGFloat = 22
+    /// Standard Apple grouped card corner radius (continuous squircle).
+    static let cornerRadius: CGFloat = 16
 
-    /// Padding inside a card.
-    static let cardPadding: CGFloat = 14
+    /// Padding inside a card (Apple standard).
+    static let cardPadding: CGFloat = 16
 
-    /// Vertical space between cards.
-    static let cardSpacing: CGFloat = 12
+    /// Vertical space between grouped cards.
+    static let cardSpacing: CGFloat = 14
 
     /// Blob colors of the ambient background.
     static func washColors(for scheme: ColorScheme) -> [Color] {
         switch scheme {
         case .dark:
             return [
-                Color(red: 0.20, green: 0.28, blue: 0.62),
-                Color(red: 0.44, green: 0.18, blue: 0.52),
-                Color(red: 0.10, green: 0.42, blue: 0.48),
+                Color(red: 0.22, green: 0.32, blue: 0.75),
+                Color(red: 0.55, green: 0.22, blue: 0.68),
+                Color(red: 0.12, green: 0.55, blue: 0.62),
             ]
         default:
             return [
@@ -34,7 +33,7 @@ enum SolariumTheme {
 
     static func baseColor(for scheme: ColorScheme) -> Color {
         scheme == .dark
-            ? Color(red: 0.05, green: 0.06, blue: 0.09)
-            : Color(red: 0.97, green: 0.97, blue: 0.99)
+            ? Color(red: 0.06, green: 0.07, blue: 0.11)
+            : Color(red: 0.96, green: 0.96, blue: 0.98)
     }
 }

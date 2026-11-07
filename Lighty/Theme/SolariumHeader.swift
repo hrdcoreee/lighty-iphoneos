@@ -23,11 +23,11 @@ struct SolariumHeader<Accessory: View>: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.largeTitle.bold())
-                    .minimumScaleFactor(0.7)
+                    .foregroundStyle(.primary)
                 if let subtitle {
                     Text(subtitle)
                         .font(.subheadline)
@@ -38,9 +38,9 @@ struct SolariumHeader<Accessory: View>: View {
             Spacer(minLength: 0)
             accessory
         }
-        .padding(SolariumTheme.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassSurface()
+        .padding(.horizontal, 4)
+        .padding(.top, 6)
+        .padding(.bottom, 2)
     }
 }
 

@@ -24,9 +24,9 @@ struct SolariumBackground: View {
             ZStack {
                 SolariumTheme.baseColor(for: scheme)
 
-                blob(colors[0], size: size, x: 0.15, y: 0.10, radius: 0.62)
-                blob(colors[1], size: size, x: 0.85, y: 0.32, radius: 0.55)
-                blob(colors[2], size: size, x: 0.45, y: 0.88, radius: 0.60)
+                blob(colors[0], size: size, x: 0.20, y: 0.15, radius: 0.85)
+                blob(colors[1], size: size, x: 0.80, y: 0.45, radius: 0.80)
+                blob(colors[2], size: size, x: 0.35, y: 0.80, radius: 0.90)
             }
             .ignoresSafeArea()
         }
@@ -48,8 +48,8 @@ struct SolariumBackground: View {
         radius: CGFloat
     ) -> some View {
         let diameter: CGFloat = min(size.width, size.height) * radius
-        let opacity: Double = scheme == .dark ? 0.55 : 0.45
-        let blurRadius: CGFloat = diameter * 0.30
+        let opacity: Double = scheme == .dark ? 0.65 : 0.45
+        let blurRadius: CGFloat = diameter * 0.35
         let wobble: CGFloat = reduceMotion ? 0 : 26
         let travel: CGFloat = drift * wobble
         let offsetX: CGFloat = (size.width * x) - (diameter / 2) + travel

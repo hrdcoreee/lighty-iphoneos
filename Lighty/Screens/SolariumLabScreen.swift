@@ -8,11 +8,11 @@ import SwiftUI
 /// runtime found so a screenshot is enough to diagnose a failure.
 struct SolariumLabScreen: View {
 
-    @State private var cornerRadius: Double = 22
-    @State private var edgeBand: Double = 14
-    @State private var displacement: Double = 16
-    @State private var blurRadius: Double = 2.5
-    @State private var saturation: Double = 1.35
+    @State private var cornerRadius: Double = 16
+    @State private var edgeBand: Double = 10
+    @State private var displacement: Double = 10
+    @State private var blurRadius: Double = 18
+    @State private var saturation: Double = 1.25
     @State private var useTelegramMatrix = true
     @State private var useBackdrop = true
 
