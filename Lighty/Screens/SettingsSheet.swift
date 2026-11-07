@@ -6,6 +6,7 @@ import SwiftUI
 struct SettingsSheet: View {
     @EnvironmentObject private var controller: LightyController
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("app_language") private var appLanguage: String = "auto"
 
     let strings: Strings
 
@@ -29,6 +30,15 @@ struct SettingsSheet: View {
                         Text(strings.noStripBound)
                             .foregroundStyle(.secondary)
                     }
+                }
+
+                Section(strings.languageSection) {
+                    Picker(strings.languageSection, selection: $appLanguage) {
+                        Text(strings.languageAuto).tag("auto")
+                        Text(strings.languageRussian).tag("ru")
+                        Text(strings.languageEnglish).tag("en")
+                    }
+                    .pickerStyle(.menu)
                 }
 
                 Section {

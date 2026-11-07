@@ -41,6 +41,11 @@ struct Strings {
     var versionLabel: String
     var aboutDescription: String
 
+    var languageSection: String
+    var languageAuto: String
+    var languageRussian: String
+    var languageEnglish: String
+
     static let english = Strings(
         scanTitle: "Lighty",
         scanSubtitle: "Find your light strip",
@@ -74,13 +79,17 @@ struct Strings {
         noStripBound: "No strip paired yet",
         aboutSection: "About",
         versionLabel: "Version",
-        aboutDescription: "Bluetooth LED strip control"
+        aboutDescription: "Bluetooth LED strip control",
+        languageSection: "Language",
+        languageAuto: "System (Auto)",
+        languageRussian: "Русский",
+        languageEnglish: "English"
     )
 
     static let russian = Strings(
         scanTitle: "Lighty",
         scanSubtitle: "Найдите вашу подсветку",
-        scan: "Сканировать",
+        scan: "Поиск",
         stopScan: "Остановить",
         searching: "Идёт поиск устройств...",
         readyToScan: "Готово к поиску",
@@ -110,13 +119,48 @@ struct Strings {
         noStripBound: "Лента ещё не сопряжена",
         aboutSection: "О приложении",
         versionLabel: "Версия",
-        aboutDescription: "Управление LED-лентой по Bluetooth"
+        aboutDescription: "Управление LED-лентой по Bluetooth",
+        languageSection: "Язык",
+        languageAuto: "Системный (авто)",
+        languageRussian: "Русский",
+        languageEnglish: "English"
     )
+
+    static func current(for code: String) -> Strings {
+        switch code {
+        case "ru":
+            return .russian
+        case "en":
+            return .english
+        default:
+            return Locale.isRussian ? .russian : .english
+        }
+    }
 }
 
 extension Locale {
+    /// Checks whether Russian is the preferred language on the device.
+    static var isRussian: Bool {
+        for lang in Locale.preferredLanguages {
+            let lower = lang.lowercased()
+            if lower.hasPrefix("ru") {
+                return true
+            }
+            if lower.hasPrefix("en") {
+                return false
+            }
+        }
+        if let code = Locale.current.language.languageCode?.identifier?.lowercased(), code == "ru" {
+            return true
+        }
+        if Locale.current.identifier.lowercased().hasPrefix("ru") {
+            return true
+        }
+        return false
+    }
+
     /// Picks Russian for Russian system locales, otherwise English.
     static var lightyStrings: Strings {
-        Locale.current.language.languageCode?.identifier == "ru" ? .russian : .english
+        isRussian ? .russian : .english
     }
 }

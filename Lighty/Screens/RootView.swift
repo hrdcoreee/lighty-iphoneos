@@ -6,10 +6,13 @@ import SwiftUI
 /// bar; settings is an overlay available from both screens.
 struct RootView: View {
     @EnvironmentObject private var controller: LightyController
+    @AppStorage("app_language") private var appLanguage: String = "auto"
 
     @State private var showSettings = false
 
-    private let strings = Locale.lightyStrings
+    private var strings: Strings {
+        Strings.current(for: appLanguage)
+    }
 
     var body: some View {
         screens
