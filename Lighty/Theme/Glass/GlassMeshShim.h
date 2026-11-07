@@ -1,8 +1,6 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
-NS_ASSUME_NONNULL_BEGIN
-
 /// A point in the private Core Animation mesh format.
 typedef struct {
     CGFloat x;
@@ -28,20 +26,18 @@ BOOL LightyGlassBackdropAvailable(void);
 BOOL LightyGlassMeshAvailable(void);
 BOOL LightyGlassFilterAvailable(void);
 
-nullable CALayer *LightyGlassCreateBackdropLayer(CGFloat scale);
+CALayer * _Nullable LightyGlassCreateBackdropLayer(CGFloat scale);
 
-nullable id LightyGlassMakeMesh(NSUInteger vertexCount,
-                                const LightyMeshVertex *vertices,
-                                NSUInteger faceCount,
-                                const LightyMeshFace *faces);
+id _Nullable LightyGlassMakeMesh(NSUInteger vertexCount,
+                                 const LightyMeshVertex *vertices,
+                                 NSUInteger faceCount,
+                                 const LightyMeshFace *faces);
 
 BOOL LightyGlassCanApplyMesh(CALayer *layer);
 BOOL LightyGlassApplyMesh(CALayer *layer, id mesh);
 
-nullable NSObject *LightyGlassMakeFilter(NSString *name);
+NSObject * _Nullable LightyGlassMakeFilter(NSString *name);
 
-nullable NSValue *LightyGlassColorMatrixValue(const float *values);
+NSValue * _Nullable LightyGlassColorMatrixValue(const float *values);
 
 void LightyGlassSetFilters(CALayer *layer, NSArray *filters);
-
-NS_ASSUME_NONNULL_END

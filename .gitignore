@@ -16,3 +16,6 @@ app-info.txt
 
 # macOS
 .DS_Store
+
+# Local handoff exports
+.handoff/
