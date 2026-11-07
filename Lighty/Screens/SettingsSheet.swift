@@ -76,19 +76,41 @@ struct SettingsSheet: View {
 
     private var diagnosticsCard: some View {
         SolariumCard {
-            NavigationLink {
-                DiagnosticsScreen(strings: strings)
-            } label: {
-                HStack {
-                    Label(strings.diagnosticsTitle, systemImage: "waveform.path.ecg")
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
+            VStack(spacing: 0) {
+                NavigationLink {
+                    DiagnosticsScreen(strings: strings)
+                } label: {
+                    settingsLinkRow(
+                        title: strings.diagnosticsTitle,
+                        systemImage: "waveform.path.ecg"
+                    )
                 }
+                .buttonStyle(.plain)
+
+                Divider().opacity(0.3)
+
+                // Development surface: tunes the private-backdrop mesh on the
+                // device, where the effect can actually be judged.
+                NavigationLink {
+                    SolariumLabScreen()
+                } label: {
+                    settingsLinkRow(title: "Solarium Lab", systemImage: "circle.hexagongrid")
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
+    }
+
+    private func settingsLinkRow(title: String, systemImage: String) -> some View {
+        HStack {
+            Label(title, systemImage: systemImage)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
     }
 
     private var aboutCard: some View {
