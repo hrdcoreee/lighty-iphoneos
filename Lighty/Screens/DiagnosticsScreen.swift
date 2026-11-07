@@ -10,36 +10,40 @@ struct DiagnosticsScreen: View {
     @State private var copied = false
 
     var body: some View {
-        List {
-            if log.entries.isEmpty {
-                Text(strings.diagnosticsEmpty)
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(log.entries) { entry in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.message)
-                            .font(.system(.footnote, design: .monospaced))
-                        HStack(spacing: 6) {
-                            Text(entry.level.rawValue)
-                                .font(.caption2.bold())
-                                .foregroundStyle(color(for: entry.level))
-                            Text(entry.date, style: .time)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+        ScrollView {
+            VStack(spacing: SolariumTheme.cardSpacing) {
+                if log.entries.isEmpty {
+                    SolariumCard {
+                        Text(strings.diagnosticsEmpty)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    SolariumCard {
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(Array(log.entries.enumerated()), id: \.element.id) { index, entry in
+                                entryRow(entry)
+                                if index < log.entries.count - 1 {
+                                    Divider().opacity(0.3)
+                                }
+                            }
                         }
                     }
-                    .padding(.vertical, 2)
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
-        .listStyle(.plain)
+        .scrollIndicators(.hidden)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .navigationTitle(strings.diagnosticsTitle)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Button {
                         UIPasteboard.general.string = log.report
-                        copied = true
+                        withAnimation(.easeOut(duration: 0.2)) { copied = true }
                     } label: {
                         Label(strings.copyDiagnostics, systemImage: "doc.on.doc")
                     }
@@ -59,11 +63,32 @@ struct DiagnosticsScreen: View {
                     .font(.caption)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(.thinMaterial, in: Capsule())
-                    .padding(.bottom, 12)
+                    .glassSurface(cornerRadius: 14)
+                    .padding(.bottom, 16)
                     .transition(.opacity)
+                    .task {
+                        try? await Task.sleep(nanoseconds: 1_500_000_000)
+                        withAnimation(.easeOut(duration: 0.2)) { copied = false }
+                    }
             }
         }
+    }
+
+    private func entryRow(_ entry: DiagnosticEntry) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(entry.message)
+                .font(.system(.footnote, design: .monospaced))
+                .textSelection(.enabled)
+            HStack(spacing: 6) {
+                Text(entry.level.rawValue)
+                    .font(.caption2.bold())
+                    .foregroundStyle(color(for: entry.level))
+                Text(entry.date, style: .time)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func color(for level: DiagnosticEntry.Level) -> Color {

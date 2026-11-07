@@ -1,8 +1,6 @@
 import SwiftUI
 
-/// Settings overlay, mirroring the Android `SettingsScreen`: the bound strip
-/// can be unbound here, the scan filter toggled, and the diagnostics log
-/// reached. Presented as a sheet from either root screen.
+/// Settings form, presented inside its own `NavigationStack` from `RootView`.
 struct SettingsSheet: View {
     @EnvironmentObject private var controller: LightyController
     @Environment(\.dismiss) private var dismiss
@@ -10,57 +8,101 @@ struct SettingsSheet: View {
     let strings: Strings
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section(strings.deviceSection) {
-                    if let bound = controller.boundDevice {
-                        Text(bound.name ?? bound.id.uuidString)
-                            .font(.body)
-                        Text(strings.unbindDesc)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Button(role: .destructive) {
-                            controller.unbind()
-                            dismiss()
-                        } label: {
-                            Label(strings.unbind, systemImage: "xmark.circle")
-                        }
-                    } else {
-                        Text(strings.noStripBound)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+        ZStack {
+            SolariumBackground()
 
-                Section {
-                    Toggle(strings.showAllDevices, isOn: Binding(
-                        get: { controller.showAllDevices },
-                        set: { controller.showAllDevices = $0 }
-                    ))
-                } footer: {
-                    Text(strings.showAllDevicesDesc)
+            ScrollView {
+                VStack(spacing: SolariumTheme.cardSpacing) {
+                    deviceCard
+                    filterCard
+                    diagnosticsCard
+                    aboutCard
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .navigationTitle(strings.settingsTitle)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(strings.done) { dismiss() }
+            }
+        }
+    }
 
-                Section {
-                    NavigationLink {
-                        DiagnosticsScreen(strings: strings)
+    private var deviceCard: some View {
+        SolariumCard(strings.deviceSection) {
+            if let bound = controller.boundDevice {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(bound.name ?? bound.id.uuidString)
+                        .font(.body)
+                    Text(strings.unbindDesc)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button(role: .destructive) {
+                        controller.unbind()
+                        dismiss()
                     } label: {
-                        Label(strings.diagnosticsTitle, systemImage: "waveform.path.ecg")
+                        Label(strings.unbind, systemImage: "xmark.circle")
+                            .font(.subheadline)
                     }
+                    .buttonStyle(.borderless)
                 }
+            } else {
+                Text(strings.noStripBound)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
 
-                Section(strings.aboutSection) {
-                    LabeledContent(strings.versionLabel, value: AppInfo.version)
-                    Text(strings.aboutDescription)
+    private var filterCard: some View {
+        SolariumCard {
+            Toggle(isOn: Binding(
+                get: { controller.showAllDevices },
+                set: { controller.showAllDevices = $0 }
+            )) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(strings.showAllDevices).font(.subheadline)
+                    Text(strings.showAllDevicesDesc)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle(strings.settingsTitle)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(strings.done) { dismiss() }
+        }
+    }
+
+    private var diagnosticsCard: some View {
+        SolariumCard {
+            NavigationLink {
+                DiagnosticsScreen(strings: strings)
+            } label: {
+                HStack {
+                    Label(strings.diagnosticsTitle, systemImage: "waveform.path.ecg")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
                 }
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var aboutCard: some View {
+        SolariumCard(strings.aboutSection) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(strings.versionLabel)
+                    Spacer()
+                    Text(AppInfo.version).foregroundStyle(.secondary)
+                }
+                .font(.subheadline)
+                Text(strings.aboutDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
     }

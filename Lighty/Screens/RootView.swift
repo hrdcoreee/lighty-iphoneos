@@ -2,8 +2,11 @@ import SwiftUI
 
 /// Root flow, mirroring the Android navigation: the pairing screen is the only
 /// entry point until a strip is bound, and a bound strip is remembered forever
-/// so every later launch lands straight on the control screen. There is no tab
-/// bar; settings is an overlay available from both screens.
+/// so every later launch lands straight on the control screen.
+///
+/// The whole flow is drawn on one ambient background, so the crossfade between
+/// screens does not flash a different color and the glass cards keep something
+/// stable to refract.
 struct RootView: View {
     @EnvironmentObject private var controller: LightyController
 
@@ -12,12 +15,18 @@ struct RootView: View {
     private let strings = Locale.lightyStrings
 
     var body: some View {
-        screens
-            .sheet(isPresented: $showSettings) {
-                // Passed explicitly rather than relying on environment inheritance.
+        ZStack {
+            SolariumBackground()
+
+            screens
+        }
+        .sheet(isPresented: $showSettings) {
+            NavigationStack {
                 SettingsSheet(strings: strings)
-                    .environmentObject(controller)
             }
+            // Sheets get their own window and do not inherit the environment.
+            .environmentObject(controller)
+        }
     }
 
     @ViewBuilder

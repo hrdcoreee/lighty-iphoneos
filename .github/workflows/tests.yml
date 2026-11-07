@@ -27,13 +27,40 @@ jobs:
         id: helpers
         run: python3 Scripts/test_pick_simulator.py
 
+      # Liquid Glass (`glassEffect`) is declared in the iOS 26 SDK and is a
+      # compile error without it. The deployment target stays 16.0; availability
+      # checks pick the material at runtime.
+      - name: Select Xcode
+        run: |
+          # Runner images keep several Xcode bundles side by side and the
+          # default one may not ship an iOS 26 SDK, so pick the highest bundle
+          # that actually reports an iOS SDK 26 or newer.
+          BEST=""
+          BEST_MAJOR=0
+          for APP in /Applications/Xcode*.app; do
+            [ -d "$APP" ] || continue
+            SDK=$(DEVELOPER_DIR="$APP/Contents/Developer" xcrun --sdk iphoneos --show-sdk-version 2>/dev/null || echo 0)
+            MAJOR=${SDK%%.*}
+            [ -n "$MAJOR" ] || MAJOR=0
+            echo "$APP -> iOS SDK $SDK"
+            if [ "$MAJOR" -ge 26 ] && [ "$MAJOR" -gt "$BEST_MAJOR" ]; then
+              BEST="$APP"
+              BEST_MAJOR="$MAJOR"
+            fi
+          done
+          if [ -z "$BEST" ]; then
+            echo "::error::No Xcode with an iOS 26 SDK on this runner; Liquid Glass cannot compile"
+            ls /Applications | grep -i xcode || true
+            exit 1
+          fi
+          sudo xcode-select -s "$BEST/Contents/Developer"
+          echo "Using $BEST"
+
       - name: Report toolchain
         run: |
-          if [ -d /Applications/Xcode.app ]; then
-            sudo xcode-select -s /Applications/Xcode.app
-          fi
           xcode-select -p
           xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
 
       - name: Install XcodeGen
         run: |

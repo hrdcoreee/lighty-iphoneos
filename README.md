@@ -20,6 +20,7 @@ Android app uses.
 | `Lighty/BLE/LightyController.swift` | Bound device, reconnect, persisted state |
 | `Lighty/Screens/` | Scan, control and diagnostics screens |
 | `Lighty/Support/HomeStripWindowShield.swift` | Window-level shield over the home-indicator strip |
+| `Lighty/Theme/` | Solarium look: Liquid Glass surfaces, wash, cards |
 | `LightyTests/` | Hardware-independent unit tests |
 | `Scripts/pick_simulator.py` | Resolves the simulator destination at CI time |
 | `.github/workflows/ios.yml` | macOS CI: build for device, sign, package the IPA |
@@ -66,6 +67,24 @@ turned out to be unreliable inside a `List` and broke ordinary dragging. It now
 reports nothing on touch-down, follows a finger after 6 pt of travel and applies
 a stationary press on release, so a home swipe cannot recolor the strip even
 without the shield.
+
+## Solarium theme
+
+The `solarium` branch reworks the UI around Liquid Glass.
+
+- `GlassSurface` draws cards with the real `glassEffect(_:in:)` on iOS 26+ and
+  falls back to `.ultraThinMaterial` plus a highlight on iOS 16-25. This is a
+  simulation, not the system material; the two will not look pixel-identical.
+- `SolariumBackground` paints a slow color wash behind everything, which is what
+  the glass has to refract. It honors Reduce Motion.
+- Cards, not a `List`: row backgrounds and separators fight the material, and
+  `List` installs its own hit testing. `SolariumScaffold` is a plain scroll view.
+- The LazyVGrid of presets and the picker keep their exact behavior; only the
+  container changed.
+
+Because `glassEffect` only exists in the iOS 26 SDK, both workflows select
+Xcode 26 explicitly and fail with a clear message if it is missing. The
+deployment target is still 16.0.
 
 ## Reconstruction notes
 
