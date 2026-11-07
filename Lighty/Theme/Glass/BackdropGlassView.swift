@@ -138,9 +138,7 @@ final class BackdropGlassUIView: UIView {
             filters.append(colorMatrix)
         }
 
-        // `filters` is not exposed as a supported property on iOS; setting it
-        // through KVC is the standard way this private filter array is used.
-        backdropLayer.setValue(filters, forKey: "filters")
+        PrivateGlassAPI.setFilters(filters, on: backdropLayer)
     }
 
     override func layoutSubviews() {
