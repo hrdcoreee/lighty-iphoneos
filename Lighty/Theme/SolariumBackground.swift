@@ -5,6 +5,10 @@ import SwiftUI
 /// Everything else in the app floats above this, which is what gives the glass
 /// cards something to refract and keeps the screen from reading as a flat list.
 /// Motion is deliberately very slow and is disabled under Reduce Motion.
+///
+/// Every offset is computed into an explicitly typed constant before it reaches
+/// a modifier. Building the same arithmetic inline made the Swift type checker
+/// time out on the CI toolchain.
 struct SolariumBackground: View {
 
     @Environment(\.colorScheme) private var scheme
@@ -14,8 +18,8 @@ struct SolariumBackground: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let size = proxy.size
-            let colors = SolariumTheme.washColors(for: scheme)
+            let size: CGSize = proxy.size
+            let colors: [Color] = SolariumTheme.washColors(for: scheme)
 
             ZStack {
                 SolariumTheme.baseColor(for: scheme)
@@ -26,11 +30,13 @@ struct SolariumBackground: View {
             }
             .ignoresSafeArea()
         }
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 18).repeatForever(autoreverses: true)) {
-                drift = 1
-            }
+        .onAppear(perform: startDrift)
+    }
+
+    private func startDrift() {
+        guard !reduceMotion else { return }
+        withAnimation(.easeInOut(duration: 18).repeatForever(autoreverses: true)) {
+            drift = 1
         }
     }
 
@@ -41,15 +47,18 @@ struct SolariumBackground: View {
         y: CGFloat,
         radius: CGFloat
     ) -> some View {
-        let diameter = min(size.width, size.height) * radius
-        let wobble = reduceMotion ? 0 : 26
+        let diameter: CGFloat = min(size.width, size.height) * radius
+        let opacity: Double = scheme == .dark ? 0.55 : 0.45
+        let blurRadius: CGFloat = diameter * 0.30
+        let wobble: CGFloat = reduceMotion ? 0 : 26
+        let travel: CGFloat = drift * wobble
+        let offsetX: CGFloat = (size.width * x) - (diameter / 2) + travel
+        let offsetY: CGFloat = (size.height * y) - (diameter / 2) - travel
+
         return Circle()
-            .fill(color.opacity(scheme == .dark ? 0.55 : 0.45))
+            .fill(color.opacity(opacity))
             .frame(width: diameter, height: diameter)
-            .blur(radius: diameter * 0.30)
-            .offset(
-                x: size.width * x - diameter / 2 + drift * wobble,
-                y: size.height * y - diameter / 2 - drift * wobble
-            )
+            .blur(radius: blurRadius)
+            .offset(x: offsetX, y: offsetY)
     }
 }
