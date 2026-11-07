@@ -91,10 +91,10 @@ static id LightyGlassInvokeMeshFactory(Class cls,
     return result;
 }
 
-id LightyGlassMakeMesh(NSUInteger vertexCount,
-                       const LightyMeshVertex *vertices,
-                       NSUInteger faceCount,
-                       const LightyMeshFace *faces) {
+NSObject *LightyGlassMakeMesh(NSUInteger vertexCount,
+                              const LightyMeshVertex *vertices,
+                              NSUInteger faceCount,
+                              const LightyMeshFace *faces) {
     if (vertices == NULL || faces == NULL || vertexCount == 0 || faceCount == 0) {
         return nil;
     }
@@ -113,7 +113,7 @@ id LightyGlassMakeMesh(NSUInteger vertexCount,
     if ([mesh respondsToSelector:stepsSelector]) {
         ((void (*)(id, SEL, long))objc_msgSend)(mesh, stepsSelector, (long)0);
     }
-    return mesh;
+    return [mesh isKindOfClass:[NSObject class]] ? (NSObject *)mesh : nil;
 }
 
 BOOL LightyGlassCanApplyMesh(CALayer *layer) {

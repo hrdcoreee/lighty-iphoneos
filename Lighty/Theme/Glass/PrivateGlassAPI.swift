@@ -36,11 +36,8 @@ enum PrivateGlassAPI {
     static func makeMesh(vertices: [GlassMeshVertex], faces: [GlassMeshFace]) -> AnyObject? {
         guard !vertices.isEmpty, !faces.isEmpty else { return nil }
 
-        var vertexStorage = vertices
-        var faceStorage = faces
-
-        return vertexStorage.withUnsafeMutableBufferPointer { vertexBuffer in
-            faceStorage.withUnsafeMutableBufferPointer { faceBuffer in
+        return vertices.withUnsafeBufferPointer { vertexBuffer in
+            faces.withUnsafeBufferPointer { faceBuffer in
                 guard let vertexPointer = vertexBuffer.baseAddress,
                       let facePointer = faceBuffer.baseAddress else {
                     return nil
@@ -50,9 +47,9 @@ enum PrivateGlassAPI {
                     vertexPointer,
                     UInt(faceBuffer.count),
                     facePointer
-                )
+                ) as AnyObject?
             }
-        } as AnyObject?
+        }
     }
 
     static func canApplyMesh(to layer: CALayer) -> Bool {
@@ -73,14 +70,13 @@ enum PrivateGlassAPI {
     /// `NSValue` with an explicit Objective-C type encoding.
     static func makeColorMatrixValue(_ values: [Float]) -> NSValue? {
         guard values.count == 20 else { return nil }
-        var storage = values
-        return storage.withUnsafeBufferPointer { buffer in
+        return values.withUnsafeBufferPointer { buffer in
             guard let base = buffer.baseAddress else { return nil }
             return LightyGlassColorMatrixValue(base)
         }
     }
 
     static func setFilters(_ filters: [Any], on layer: CALayer) {
-        LightyGlassSetFilters(layer, filters as NSArray)
+        LightyGlassSetFilters(layer, filters)
     }
 }
