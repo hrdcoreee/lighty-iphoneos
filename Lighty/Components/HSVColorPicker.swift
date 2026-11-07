@@ -38,6 +38,9 @@ struct HSVColorPicker: View {
 /// Shared rule for both axes: the gesture starts by being ignored, and only
 /// becomes active after the travel threshold, from a touch that did not begin
 /// in the home strip.
+///
+/// Main-actor isolated because the strip check reads UIKit window metrics.
+@MainActor
 private struct PickerDragState {
     /// Points a finger must travel before the picker starts following it. Large
     /// enough to reject the first frames of the home swipe, small enough to be
