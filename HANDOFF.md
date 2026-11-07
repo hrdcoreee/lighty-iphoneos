@@ -35,9 +35,14 @@ The deployment target is still 16.0.
 - The solarium theme itself: glass cards, ambient wash, headers, all four
   screens rewritten from `List` to a plain scroll of cards.
 - iOS 26 path uses the real `glassEffect(_:in:)`.
-- iOS 16-25 path falls back to `.ultraThinMaterial` plus a highlight.
-- The private-API path builds a `CABackdropLayer`, applies `gaussianBlur` and a
-  saturation `colorMatrix`, and attaches a `CAMeshTransform` for rim refraction.
+- iOS 16-25 path now renders `BackdropGlassView` across all cards, with
+  Telegram-tuned color matrix (`[2.6705, -1.1088, -0.1117...]`), crisp blur
+  (`2.5 pt`), dual diagonal specular rim highlights, and `CAMeshTransform`
+  edge refraction.
+- Runtime capability check: `CABackdropLayer`, `CAMutableMeshTransform`, and
+  `CAFilter` verified present and resolving on physical iOS 16 device.
+- Graceful degradation: if private symbols fail to resolve, falls back to
+  `.ultraThinMaterial` without crashing.
 
 ## Known unknowns (the actual reason for the lab screen)
 
