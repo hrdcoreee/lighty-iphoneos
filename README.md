@@ -58,10 +58,14 @@ A SwiftUI overlay is not enough here, because a `List` installs its own hit
 testing and an overlay inside the safe area never covers the strip. The window
 shield is sized from the real window bounds, claims only touches inside the
 strip and returns `nil` everywhere else, and carries no recognisers - so the
-system gesture keeps working.
+system gesture keeps working. It also steps aside while a sheet is presented,
+and does nothing on a device without a home indicator.
 
-The picker additionally rejects drags that start in that strip and only starts
-following a finger after 12 pt of travel (`HomeStripGeometry`, unit tested).
+The picker itself stays simple on purpose: a guard based on global coordinates
+turned out to be unreliable inside a `List` and broke ordinary dragging. It now
+reports nothing on touch-down, follows a finger after 6 pt of travel and applies
+a stationary press on release, so a home swipe cannot recolor the strip even
+without the shield.
 
 ## Reconstruction notes
 

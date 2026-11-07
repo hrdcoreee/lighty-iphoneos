@@ -36,7 +36,7 @@ final class HomeStripWindowShield: UIView {
                 shield.autoresizingMask = [.flexibleWidth, .flexibleHeight]
                 shield.frame = window.bounds
             }
-            window.bringSubviewToFront(shield)
+            reposition(shield, in: window)
             shield.setNeedsLayout()
             return
         }
@@ -50,8 +50,14 @@ final class HomeStripWindowShield: UIView {
         // Added last so it sits above the SwiftUI hosting controller. Alerts
         // and sheets live in their own windows, so they keep working.
         window.addSubview(shield)
-        window.bringSubviewToFront(shield)
+        reposition(shield, in: window)
         installed = shield
+    }
+
+    /// Keeps the shield above the app content. Presentations over it are handled
+    /// in `hitTest`, which steps aside while a sheet is up.
+    private static func reposition(_ shield: HomeStripWindowShield, in window: UIWindow) {
+        window.bringSubviewToFront(shield)
     }
 
     static func refreshFrame() {
@@ -70,8 +76,13 @@ final class HomeStripWindowShield: UIView {
 
     /// Only the strip claims a touch; every other point falls through to the
     /// SwiftUI content below.
+    ///
+    /// While a sheet is presented the shield steps aside: the sheet is drawn in
+    /// the same window and reaches the bottom edge, so blocking there would
+    /// make the last rows of its list unreachable.
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         guard !strip.isEmpty, strip.contains(point) else { return nil }
+        guard window?.rootViewController?.presentedViewController == nil else { return nil }
         return self
     }
 
