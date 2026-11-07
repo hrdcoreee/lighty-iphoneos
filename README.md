@@ -19,7 +19,7 @@ Android app uses.
 | `Lighty/BLE/BleCentral.swift` | CoreBluetooth scan/GATT/write queue |
 | `Lighty/BLE/LightyController.swift` | Bound device, reconnect, persisted state |
 | `Lighty/Screens/` | Scan, control and diagnostics screens |
-| `Lighty/Components/TouchShield.swift` | Touch-dead strip over the home-indicator area |
+| `Lighty/Support/HomeStripWindowShield.swift` | Window-level shield over the home-indicator strip |
 | `LightyTests/` | Hardware-independent unit tests |
 | `Scripts/pick_simulator.py` | Resolves the simulator destination at CI time |
 | `.github/workflows/ios.yml` | macOS CI: build for device, sign, package the IPA |
@@ -48,11 +48,20 @@ white background, the bulb tinted `#454545`, the same 0.58 scale inside the
 bitmap, so the vector is rasterised when the asset is produced rather than
 bundled as a vector asset.
 
-The home-indicator strip is covered by a transparent `TouchShield`, so a swipe
-home is never read as a tap on the content underneath. On the control screen
-the picker sits at the bottom of the scroll view, and that stray touch used to
-recolor the strip mid-swipe. The shield claims hit testing only and carries no
-gesture recognisers, so the system gesture is unaffected.
+The home-indicator strip is covered by `HomeStripWindowShield`, a transparent
+`UIView` added to the key window. A swipe home starts with a touch in that
+strip, and iOS hands that touch to the app before claiming the gesture, so a
+control that reacts on touch-down fires first. That is exactly what the color
+picker did: the strip changed color on the way home.
+
+A SwiftUI overlay is not enough here, because a `List` installs its own hit
+testing and an overlay inside the safe area never covers the strip. The window
+shield is sized from the real window bounds, claims only touches inside the
+strip and returns `nil` everywhere else, and carries no recognisers - so the
+system gesture keeps working.
+
+The picker additionally rejects drags that start in that strip and only starts
+following a finger after 12 pt of travel (`HomeStripGeometry`, unit tested).
 
 ## Reconstruction notes
 

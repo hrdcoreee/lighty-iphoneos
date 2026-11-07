@@ -12,26 +12,12 @@ struct RootView: View {
     private let strings = Locale.lightyStrings
 
     var body: some View {
-        // The inset is read at the root, where it is the real window inset:
-        // nested geometry readers report zero because the inset is consumed.
-        GeometryReader { proxy in
-            ZStack {
-                screens
-
-                // Pinned to the true screen bottom rather than the safe-area
-                // edge, so the shield covers the home-indicator strip exactly.
-                VStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    TouchShield(height: proxy.safeAreaInsets.bottom)
-                }
-                .ignoresSafeArea(.container, edges: .bottom)
+        screens
+            .sheet(isPresented: $showSettings) {
+                // Passed explicitly rather than relying on environment inheritance.
+                SettingsSheet(strings: strings)
+                    .environmentObject(controller)
             }
-        }
-        .sheet(isPresented: $showSettings) {
-            // Passed explicitly rather than relying on environment inheritance.
-            SettingsSheet(strings: strings)
-                .environmentObject(controller)
-        }
     }
 
     @ViewBuilder
