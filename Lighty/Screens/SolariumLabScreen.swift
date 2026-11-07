@@ -9,10 +9,11 @@ import SwiftUI
 struct SolariumLabScreen: View {
 
     @State private var cornerRadius: Double = 22
-    @State private var edgeBand: Double = 16
-    @State private var displacement: Double = 14
-    @State private var blurRadius: Double = 8
+    @State private var edgeBand: Double = 14
+    @State private var displacement: Double = 16
+    @State private var blurRadius: Double = 2.5
     @State private var saturation: Double = 1.35
+    @State private var useTelegramMatrix = true
     @State private var useBackdrop = true
 
     var body: some View {
@@ -71,7 +72,8 @@ struct SolariumLabScreen: View {
                             displacement: displacement,
                             blurRadius: blurRadius,
                             saturation: saturation,
-                            tint: UIColor.white.withAlphaComponent(0.06)
+                            useTelegramMatrix: useTelegramMatrix,
+                            tint: UIColor.white.withAlphaComponent(0.04)
                         )
                     } else {
                         Color.clear.glassSurface(cornerRadius: cornerRadius)
@@ -91,16 +93,20 @@ struct SolariumLabScreen: View {
     }
 
     private var controlsCard: some View {
-        SolariumCard("Mesh") {
+        SolariumCard("Mesh & Filters") {
             VStack(alignment: .leading, spacing: 12) {
                 Toggle("Private backdrop", isOn: $useBackdrop)
+                    .font(.subheadline)
+                Toggle("Telegram vibrancy matrix", isOn: $useTelegramMatrix)
                     .font(.subheadline)
 
                 slider("Corner radius", value: $cornerRadius, range: 0...44, format: "%.0f")
                 slider("Edge band", value: $edgeBand, range: 2...40, format: "%.0f")
                 slider("Displacement", value: $displacement, range: 0...32, format: "%.0f")
                 slider("Blur radius", value: $blurRadius, range: 0...24, format: "%.1f")
-                slider("Saturation", value: $saturation, range: 0.5...2.0, format: "%.2f")
+                if !useTelegramMatrix {
+                    slider("Saturation", value: $saturation, range: 0.5...2.0, format: "%.2f")
+                }
             }
         }
     }

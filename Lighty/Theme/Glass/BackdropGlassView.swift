@@ -8,12 +8,13 @@ import UIKit
 /// for iOS 16-25, where no public refraction API is available.
 struct BackdropGlassView: UIViewRepresentable {
 
-    var cornerRadius: CGFloat
-    var edgeBand: CGFloat
-    var displacement: CGFloat
-    var blurRadius: CGFloat
-    var saturation: CGFloat
-    var tint: UIColor?
+    var cornerRadius: CGFloat = SolariumTheme.cornerRadius
+    var edgeBand: CGFloat = 14
+    var displacement: CGFloat = 16
+    var blurRadius: CGFloat = 2.5
+    var saturation: CGFloat = 1.35
+    var useTelegramMatrix: Bool = true
+    var tint: UIColor? = nil
 
     func makeUIView(context: Context) -> BackdropGlassUIView {
         BackdropGlassUIView()
@@ -26,6 +27,7 @@ struct BackdropGlassView: UIViewRepresentable {
             displacement: displacement,
             blurRadius: blurRadius,
             saturation: saturation,
+            useTelegramMatrix: useTelegramMatrix,
             tint: tint
         )
     }
@@ -38,6 +40,15 @@ struct BackdropGlassView: UIViewRepresentable {
 /// parameters change.
 final class BackdropGlassUIView: UIView {
 
+    /// Telegram-tuned color matrix for rich liquid glass refraction:
+    /// amplifies saturation, boosts color separation, and lifts brightness by 0.05.
+    static let telegramColorMatrix: [Float] = [
+        2.6705, -1.1088, -0.1117, 0.0, 0.05,
+        -0.3295,  1.8914, -0.1119, 0.0, 0.05,
+        -0.3297, -1.1084,  2.8881, 0.0, 0.05,
+         0.0,     0.0,     0.0,   1.0, 0.0
+    ]
+
     private struct MeshKey: Equatable {
         var size: CGSize
         var cornerRadius: CGFloat
@@ -46,16 +57,18 @@ final class BackdropGlassUIView: UIView {
     }
 
     private let backdropLayer: CALayer?
+    private var fallbackBlurView: UIVisualEffectView?
     private let tintLayer = CALayer()
     private let highlightLayer = CAGradientLayer()
 
     private var appliedKey: MeshKey?
 
-    private var cornerRadius: CGFloat = 22
-    private var edgeBand: CGFloat = 16
-    private var displacement: CGFloat = 14
-    private var blurRadius: CGFloat = 8
+    private var cornerRadius: CGFloat = SolariumTheme.cornerRadius
+    private var edgeBand: CGFloat = 14
+    private var displacement: CGFloat = 16
+    private var blurRadius: CGFloat = 2.5
     private var saturation: CGFloat = 1.35
+    private var useTelegramMatrix: Bool = true
     private var tint: UIColor?
 
     override init(frame: CGRect) {
@@ -71,18 +84,26 @@ final class BackdropGlassUIView: UIView {
             // re-samples on every layout pass and flickers.
             backdropLayer.delegate = backdropDelegate
             layer.addSublayer(backdropLayer)
+        } else {
+            let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+            blur.isUserInteractionEnabled = false
+            addSubview(blur)
+            self.fallbackBlurView = blur
         }
 
         layer.addSublayer(tintLayer)
 
-        // The system material gets this highlight for free; a bare backdrop
-        // layer needs it drawn explicitly or the panel reads as a flat blur.
+        // Diagonal specular highlights matching Telegram's dual-rim bevel:
+        // top-left light catch (white 0.35) and bottom-right rim reflection (white 0.18).
         highlightLayer.colors = [
-            UIColor.white.withAlphaComponent(0.30).cgColor,
+            UIColor.white.withAlphaComponent(0.35).cgColor,
+            UIColor.white.withAlphaComponent(0.08).cgColor,
             UIColor.white.withAlphaComponent(0.0).cgColor,
+            UIColor.white.withAlphaComponent(0.18).cgColor,
         ]
-        highlightLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
-        highlightLayer.endPoint = CGPoint(x: 0.5, y: 0.62)
+        highlightLayer.locations = [0.0, 0.22, 0.72, 1.0]
+        highlightLayer.startPoint = CGPoint(x: 0.0, y: 0.0)
+        highlightLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
         layer.addSublayer(highlightLayer)
     }
 
@@ -102,19 +123,24 @@ final class BackdropGlassUIView: UIView {
         displacement: CGFloat,
         blurRadius: CGFloat,
         saturation: CGFloat,
+        useTelegramMatrix: Bool = true,
         tint: UIColor?
     ) {
+        let filtersChanged = (self.blurRadius != blurRadius ||
+                              self.saturation != saturation ||
+                              self.useTelegramMatrix != useTelegramMatrix)
+
         self.cornerRadius = cornerRadius
         self.edgeBand = edgeBand
         self.displacement = displacement
         self.blurRadius = blurRadius
         self.saturation = saturation
+        self.useTelegramMatrix = useTelegramMatrix
         self.tint = tint
 
-        // Filters are cheap objects; recreating them on every update keeps the
-        // code free of a "has anything really changed" cache that would have
-        // to mirror every parameter.
-        applyFilters()
+        if filtersChanged || (backdropLayer != nil && backdropLayer?.filters == nil) {
+            applyFilters()
+        }
         tintLayer.backgroundColor = (tint ?? .clear).cgColor
         setNeedsLayout()
     }
@@ -124,18 +150,23 @@ final class BackdropGlassUIView: UIView {
 
         var filters: [Any] = []
 
-        if blurRadius > 0, let blur = PrivateGlassAPI.makeFilter("gaussianBlur") {
-            blur.setValue(blurRadius as NSNumber, forKey: "inputRadius")
-            filters.append(blur)
-        }
+        // Telegram pipeline: color matrix first (vibrancy + saturation),
+        // followed by gaussian blur.
+        let matrixValues: [Float] = useTelegramMatrix
+            ? Self.telegramColorMatrix
+            : saturationMatrix(saturation)
 
-        if saturation != 1,
-           let matrix = PrivateGlassAPI.makeColorMatrixValue(saturationMatrix(saturation)),
+        if let matrix = PrivateGlassAPI.makeColorMatrixValue(matrixValues),
            let colorMatrix = PrivateGlassAPI.makeFilter("colorMatrix") {
             colorMatrix.setValue(matrix, forKey: "inputColorMatrix")
             // Lets the filter scale with the backdrop instead of a snapshot.
             colorMatrix.setValue(true as NSNumber, forKey: "inputBackdropAware")
             filters.append(colorMatrix)
+        }
+
+        if blurRadius > 0, let blur = PrivateGlassAPI.makeFilter("gaussianBlur") {
+            blur.setValue(blurRadius as NSNumber, forKey: "inputRadius")
+            filters.append(blur)
         }
 
         PrivateGlassAPI.setFilters(filters, on: backdropLayer)
@@ -152,12 +183,17 @@ final class BackdropGlassUIView: UIView {
         layer.cornerRadius = cornerRadius
         layer.cornerCurve = .continuous
 
+        fallbackBlurView?.frame = bounds
         backdropLayer?.frame = bounds
         tintLayer.frame = bounds
         tintLayer.cornerRadius = cornerRadius
         tintLayer.cornerCurve = .continuous
         tintLayer.masksToBounds = true
+
         highlightLayer.frame = bounds
+        highlightLayer.cornerRadius = cornerRadius
+        highlightLayer.cornerCurve = .continuous
+        highlightLayer.masksToBounds = true
 
         let key = MeshKey(
             size: bounds.size,

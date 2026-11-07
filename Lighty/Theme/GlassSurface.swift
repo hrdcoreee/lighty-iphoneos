@@ -26,18 +26,47 @@ struct GlassSurface: ViewModifier {
                 )
         } else {
             content
-                .background { fallbackSurface }
+                .background { glassBackground }
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .strokeBorder(.white.opacity(0.30), lineWidth: 1)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [
+                                    .white.opacity(0.35),
+                                    .white.opacity(0.10),
+                                    .white.opacity(0.04),
+                                    .white.opacity(0.18)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
                 }
                 .shadow(
-                    color: .black.opacity(0.18),
-                    radius: 18,
+                    color: .black.opacity(0.16),
+                    radius: 16,
                     x: 0,
                     y: 8
                 )
+        }
+    }
+
+    @ViewBuilder
+    private var glassBackground: some View {
+        if PrivateGlassAPI.isBackdropAvailable {
+            BackdropGlassView(
+                cornerRadius: cornerRadius,
+                edgeBand: min(14, cornerRadius),
+                displacement: 16,
+                blurRadius: 2.5,
+                saturation: 1.35,
+                useTelegramMatrix: true,
+                tint: tint.map { UIColor($0).withAlphaComponent(0.12) } ?? UIColor(white: 1.0, alpha: 0.04)
+            )
+        } else {
+            fallbackSurface
         }
     }
 
