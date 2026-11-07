@@ -1,14 +1,9 @@
 import SwiftUI
 
-/// Ambient backdrop: a base color with three large, slow-moving color blobs.
+/// Ambient backdrop: a rich, vibrant gradient wash with deep luminous glows.
 ///
-/// Everything else in the app floats above this, which is what gives the glass
-/// cards something to refract and keeps the screen from reading as a flat list.
-/// Motion is deliberately very slow and is disabled under Reduce Motion.
-///
-/// Every offset is computed into an explicitly typed constant before it reaches
-/// a modifier. Building the same arithmetic inline made the Swift type checker
-/// time out on the CI toolchain.
+/// This provides the optical color source that liquid glass refracts and transmits.
+/// Motion is slow and organic, disabled under Reduce Motion.
 struct SolariumBackground: View {
 
     @Environment(\.colorScheme) private var scheme
@@ -17,48 +12,89 @@ struct SolariumBackground: View {
     @State private var drift: CGFloat = 0
 
     var body: some View {
-        GeometryReader { proxy in
-            let size: CGSize = proxy.size
-            let colors: [Color] = SolariumTheme.washColors(for: scheme)
+        ZStack {
+            if scheme == .dark {
+                // Deep midnight canvas
+                Color(red: 0.04, green: 0.05, blue: 0.09)
 
-            ZStack {
-                SolariumTheme.baseColor(for: scheme)
+                // Top-leading luminous sapphire aura
+                RadialGradient(
+                    colors: [
+                        Color(red: 0.22, green: 0.38, blue: 0.95).opacity(0.70),
+                        Color(red: 0.15, green: 0.25, blue: 0.70).opacity(0.35),
+                        Color.clear
+                    ],
+                    center: UnitPoint(x: 0.15 + drift * 0.1, y: 0.12 - drift * 0.06),
+                    startRadius: 20,
+                    endRadius: 420
+                )
 
-                blob(colors[0], size: size, x: 0.20, y: 0.15, radius: 0.85)
-                blob(colors[1], size: size, x: 0.80, y: 0.45, radius: 0.80)
-                blob(colors[2], size: size, x: 0.35, y: 0.80, radius: 0.90)
+                // Mid-trailing warm violet/magenta aura
+                RadialGradient(
+                    colors: [
+                        Color(red: 0.72, green: 0.18, blue: 0.75).opacity(0.60),
+                        Color(red: 0.45, green: 0.10, blue: 0.55).opacity(0.30),
+                        Color.clear
+                    ],
+                    center: UnitPoint(x: 0.88 - drift * 0.08, y: 0.42 + drift * 0.08),
+                    startRadius: 20,
+                    endRadius: 400
+                )
+
+                // Bottom-leading electric teal aura
+                RadialGradient(
+                    colors: [
+                        Color(red: 0.10, green: 0.65, blue: 0.75).opacity(0.55),
+                        Color(red: 0.05, green: 0.40, blue: 0.50).opacity(0.25),
+                        Color.clear
+                    ],
+                    center: UnitPoint(x: 0.30 + drift * 0.06, y: 0.88 - drift * 0.08),
+                    startRadius: 20,
+                    endRadius: 420
+                )
+            } else {
+                // Light mode: airy crystal canvas
+                Color(red: 0.95, green: 0.96, blue: 0.98)
+
+                RadialGradient(
+                    colors: [
+                        Color(red: 0.55, green: 0.70, blue: 1.0).opacity(0.55),
+                        Color.clear
+                    ],
+                    center: UnitPoint(x: 0.15 + drift * 0.1, y: 0.12),
+                    startRadius: 40,
+                    endRadius: 420
+                )
+
+                RadialGradient(
+                    colors: [
+                        Color(red: 0.90, green: 0.60, blue: 0.95).opacity(0.50),
+                        Color.clear
+                    ],
+                    center: UnitPoint(x: 0.85 - drift * 0.08, y: 0.40),
+                    startRadius: 40,
+                    endRadius: 400
+                )
+
+                RadialGradient(
+                    colors: [
+                        Color(red: 0.45, green: 0.90, blue: 0.85).opacity(0.45),
+                        Color.clear
+                    ],
+                    center: UnitPoint(x: 0.30, y: 0.85),
+                    startRadius: 40,
+                    endRadius: 400
+                )
             }
-            .ignoresSafeArea()
         }
+        .ignoresSafeArea()
         .onAppear(perform: startDrift)
     }
 
     private func startDrift() {
         guard !reduceMotion else { return }
-        withAnimation(.easeInOut(duration: 18).repeatForever(autoreverses: true)) {
+        withAnimation(.easeInOut(duration: 14).repeatForever(autoreverses: true)) {
             drift = 1
         }
-    }
-
-    private func blob(
-        _ color: Color,
-        size: CGSize,
-        x: CGFloat,
-        y: CGFloat,
-        radius: CGFloat
-    ) -> some View {
-        let diameter: CGFloat = min(size.width, size.height) * radius
-        let opacity: Double = scheme == .dark ? 0.65 : 0.45
-        let blurRadius: CGFloat = diameter * 0.35
-        let wobble: CGFloat = reduceMotion ? 0 : 26
-        let travel: CGFloat = drift * wobble
-        let offsetX: CGFloat = (size.width * x) - (diameter / 2) + travel
-        let offsetY: CGFloat = (size.height * y) - (diameter / 2) - travel
-
-        return Circle()
-            .fill(color.opacity(opacity))
-            .frame(width: diameter, height: diameter)
-            .blur(radius: blurRadius)
-            .offset(x: offsetX, y: offsetY)
     }
 }

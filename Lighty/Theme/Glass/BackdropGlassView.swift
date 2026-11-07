@@ -59,15 +59,14 @@ final class BackdropGlassUIView: UIView {
     private let backdropLayer: CALayer?
     private var fallbackBlurView: UIVisualEffectView?
     private let tintLayer = CALayer()
-    private let highlightLayer = CAGradientLayer()
 
     private var appliedKey: MeshKey?
 
     private var cornerRadius: CGFloat = SolariumTheme.cornerRadius
-    private var edgeBand: CGFloat = 10
-    private var displacement: CGFloat = 10
-    private var blurRadius: CGFloat = 18
-    private var saturation: CGFloat = 1.25
+    private var edgeBand: CGFloat = 12
+    private var displacement: CGFloat = 12
+    private var blurRadius: CGFloat = 16
+    private var saturation: CGFloat = 1.30
     private var useTelegramMatrix: Bool = true
     private var tint: UIColor?
 
@@ -92,15 +91,6 @@ final class BackdropGlassUIView: UIView {
         }
 
         layer.addSublayer(tintLayer)
-
-        // Subtle specular top edge in line with Apple HIG
-        highlightLayer.colors = [
-            UIColor.white.withAlphaComponent(0.08).cgColor,
-            UIColor.white.withAlphaComponent(0.0).cgColor,
-        ]
-        highlightLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
-        highlightLayer.endPoint = CGPoint(x: 0.5, y: 0.18)
-        layer.addSublayer(highlightLayer)
     }
 
     required init?(coder: NSCoder) {
@@ -185,11 +175,6 @@ final class BackdropGlassUIView: UIView {
         tintLayer.cornerRadius = cornerRadius
         tintLayer.cornerCurve = .continuous
         tintLayer.masksToBounds = true
-
-        highlightLayer.frame = bounds
-        highlightLayer.cornerRadius = cornerRadius
-        highlightLayer.cornerCurve = .continuous
-        highlightLayer.masksToBounds = true
 
         let key = MeshKey(
             size: bounds.size,

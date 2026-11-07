@@ -29,42 +29,63 @@ struct GlassSurface: ViewModifier {
                 .background { glassBackground }
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                 .overlay {
+                    // Liquid Glass 3D specular rim: sharp light catch top-left, subtle rim bottom-right
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                         .strokeBorder(
                             LinearGradient(
-                                colors: [
-                                    .white.opacity(0.12),
-                                    .white.opacity(0.04)
+                                stops: [
+                                    .init(color: .white.opacity(0.50), location: 0.0),
+                                    .init(color: .white.opacity(0.18), location: 0.25),
+                                    .init(color: .white.opacity(0.04), location: 0.60),
+                                    .init(color: .white.opacity(0.28), location: 1.0)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
-                            lineWidth: 0.5
+                            lineWidth: 1
                         )
                 }
                 .shadow(
-                    color: .black.opacity(0.10),
-                    radius: 12,
+                    color: .black.opacity(0.18),
+                    radius: 16,
                     x: 0,
-                    y: 4
+                    y: 8
+                )
+                .shadow(
+                    color: .black.opacity(0.08),
+                    radius: 4,
+                    x: 0,
+                    y: 2
                 )
         }
     }
 
     @ViewBuilder
     private var glassBackground: some View {
-        if PrivateGlassAPI.isBackdropAvailable {
-            BackdropGlassView(
-                cornerRadius: cornerRadius,
-                edgeBand: min(10, cornerRadius),
-                displacement: 10,
-                blurRadius: 18,
-                saturation: 1.25,
-                useTelegramMatrix: true,
-                tint: tint.map { UIColor($0).withAlphaComponent(0.10) } ?? UIColor(white: 1.0, alpha: 0.04)
-            )
-        } else {
-            fallbackSurface
+        ZStack {
+            if PrivateGlassAPI.isBackdropAvailable {
+                BackdropGlassView(
+                    cornerRadius: cornerRadius,
+                    edgeBand: min(12, cornerRadius),
+                    displacement: 12,
+                    blurRadius: 16,
+                    saturation: 1.30,
+                    useTelegramMatrix: true,
+                    tint: tint.map { UIColor($0).withAlphaComponent(0.15) } ?? UIColor(white: 1.0, alpha: 0.06)
+                )
+            } else {
+                fallbackSurface
+            }
+
+            // Delicate top surface reflection
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [.white.opacity(0.10), .white.opacity(0.0)],
+                        startPoint: .top,
+                        endPoint: UnitPoint(x: 0.5, y: 0.35)
+                    )
+                )
         }
     }
 
