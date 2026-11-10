@@ -21,7 +21,9 @@ enum ElkMatcher {
 
         let serviceMatch = advertisedServiceUUIDs.contains {
             $0.caseInsensitiveCompare(ElkProtocol.serviceUUID) == .orderedSame
+                || $0.caseInsensitiveCompare("FFF0") == .orderedSame
                 || $0.uppercased().hasPrefix("0000FFF0")
+                || $0.uppercased().hasPrefix("FFF0")
         }
 
         let nameMatch: Bool

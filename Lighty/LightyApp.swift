@@ -9,10 +9,10 @@ struct LightyApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(controller)
-            // The window does not exist during the first `onAppear`, so the
-            // strip shield is installed from the key-window notification and
-            // refreshed whenever the scene becomes active again.
-            .background(WindowShieldInstaller())
+                // The window does not exist during the first `onAppear`, so the
+                // strip shield is installed from the key-window notification and
+                // refreshed whenever the scene becomes active again.
+                .background(WindowShieldInstaller())
                 .onAppear { controller.setForeground(true) }
         }
         .onChange(of: scenePhase) { phase in

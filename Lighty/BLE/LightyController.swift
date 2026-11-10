@@ -84,7 +84,9 @@ final class LightyController: ObservableObject {
 
         if boundDevice != nil {
             self.log.log("Bound device restored; connecting on launch")
-            connectBound()
+            if isBluetoothReady {
+                connectBound()
+            }
         }
     }
 
@@ -209,7 +211,7 @@ final class LightyController: ObservableObject {
     }
 
     private func connectBound() {
-        guard let boundDevice else { return }
+        guard let boundDevice, isBluetoothReady else { return }
         central.connect(to: boundDevice.toScannedDevice())
     }
 
@@ -220,7 +222,9 @@ final class LightyController: ObservableObject {
                 guard let self, let bound = self.boundDevice else { return }
                 switch self.connectionState {
                 case .disconnected, .failed:
-                    self.central.connect(to: bound.toScannedDevice())
+                    if self.isBluetoothReady {
+                        self.central.connect(to: bound.toScannedDevice())
+                    }
                 case .connected:
                     self.central.readRSSI()
                 case .connecting:
@@ -280,7 +284,7 @@ final class LightyController: ObservableObject {
         var next = hsv
         if let hue { next.hue = ((hue.truncatingRemainder(dividingBy: 360)) + 360).truncatingRemainder(dividingBy: 360) }
         if let saturation { next.saturation = min(max(saturation, 0), 1) }
-        if let brightness { next.brightness = min(max(brightness, 0), 1) }
+        if let brightness { next.brightness = min(max(brightness, 0.05), 1) }
         hsv = next
         persistLight()
         enqueueColor(throttled: true)

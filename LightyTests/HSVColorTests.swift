@@ -52,6 +52,18 @@ final class HSVColorTests: XCTestCase {
         XCTAssertEqual(rgb.b, 0)
     }
 
+    func testNonFiniteComponentsDoNotTrap() {
+        let nanColor = HSVColor(hue: .nan, saturation: 1, brightness: 1).rgb
+        XCTAssertEqual(nanColor.r, 0)
+        XCTAssertEqual(nanColor.g, 0)
+        XCTAssertEqual(nanColor.b, 0)
+
+        let infColor = HSVColor(hue: 120, saturation: .infinity, brightness: 1).rgb
+        XCTAssertEqual(infColor.r, 0)
+        XCTAssertEqual(infColor.g, 0)
+        XCTAssertEqual(infColor.b, 0)
+    }
+
     func testElkFrameFromColor() {
         let frame = HSVColor(hue: 0, saturation: 1, brightness: 1).elkFrame
         XCTAssertEqual(frame, [0x7E, 0x07, 0x05, 0x03, 0xFF, 0x00, 0x00, 0x00, 0xEF])

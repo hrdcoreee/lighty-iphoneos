@@ -60,6 +60,9 @@ struct HSVColor: Equatable {
 
     /// 8-bit RGB components, rounded the same way the Android app rounds.
     var rgb: (r: Int, g: Int, b: Int) {
+        guard hue.isFinite, saturation.isFinite, brightness.isFinite else {
+            return (0, 0, 0)
+        }
         let normalisedHue = (hue.truncatingRemainder(dividingBy: 360) + 360)
             .truncatingRemainder(dividingBy: 360)
         let h = normalisedHue / 60

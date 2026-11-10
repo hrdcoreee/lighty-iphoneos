@@ -27,6 +27,7 @@ struct Strings {
     var diagnosticsTitle: String
     var diagnosticsEmpty: String
     var copyDiagnostics: String
+    var copied: String
     var clearLog: String
     var showAllDevices: String
     var showAllDevicesDesc: String
@@ -68,6 +69,7 @@ struct Strings {
         diagnosticsTitle: "Diagnostics",
         diagnosticsEmpty: "No log entries yet.",
         copyDiagnostics: "Copy log",
+        copied: "Copied",
         clearLog: "Clear",
         showAllDevices: "Show all Bluetooth devices",
         showAllDevicesDesc: "Scan for any BLE device, not only strip controllers",
@@ -108,6 +110,7 @@ struct Strings {
         diagnosticsTitle: "Диагностика",
         diagnosticsEmpty: "Записей пока нет.",
         copyDiagnostics: "Копировать лог",
+        copied: "Скопировано",
         clearLog: "Очистить",
         showAllDevices: "Показывать все Bluetooth-устройства",
         showAllDevicesDesc: "Искать любые BLE-устройства, а не только контроллеры ленты",
@@ -141,6 +144,9 @@ struct Strings {
 extension Locale {
     /// Checks whether Russian is the preferred language on the device.
     static var isRussian: Bool {
+        if let preferred = Bundle.preferredLocalizations(from: ["en", "ru"], forPreferences: Locale.preferredLanguages).first {
+            return preferred == "ru"
+        }
         for lang in Locale.preferredLanguages {
             let lower = lang.lowercased()
             if lower.hasPrefix("ru") {

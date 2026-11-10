@@ -36,7 +36,13 @@ final class ElkMatcherTests: XCTestCase {
             ElkMatcher.isElkLike(name: nil, advertisedServiceUUIDs: [ElkProtocol.serviceUUID])
         )
         XCTAssertTrue(
+            ElkMatcher.isElkLike(name: nil, advertisedServiceUUIDs: ["FFF0"])
+        )
+        XCTAssertTrue(
             ElkMatcher.isElkLike(name: "Weird Name", advertisedServiceUUIDs: ["0000FFF0-0000-1000-8000-00805F9B34FB"])
+        )
+        XCTAssertTrue(
+            ElkMatcher.isElkLike(name: "Weird Name", advertisedServiceUUIDs: ["fff0"])
         )
     }
 }

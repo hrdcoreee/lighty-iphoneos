@@ -24,8 +24,21 @@ final class BleCentral: NSObject {
     private var peripheral: CBPeripheral?
     private var writeCharacteristic: CBCharacteristic?
 
+    /// Retains discovered peripherals so CoreBluetooth does not deallocate them
+    /// before connection.
+    private var discoveredPeripherals: [UUID: CBPeripheral] = [:]
+
     /// Maps CoreBluetooth identifiers to the discovered device metadata.
     private var knownDevices: [UUID: ScannedDevice] = [:]
+
+    private static let elkServiceUUIDs = [
+        CBUUID(string: "FFF0"),
+        CBUUID(string: ElkProtocol.serviceUUID),
+    ]
+    private static let elkWriteCharacteristicUUIDs = [
+        CBUUID(string: "FFF3"),
+        CBUUID(string: ElkProtocol.writeCharacteristicUUID),
+    ]
 
     private var isScanning = false
     private var shouldBeScanning = false
@@ -52,7 +65,7 @@ final class BleCentral: NSObject {
     var bluetoothState: CBManagerState { central.state }
 
     func peripheral(for id: UUID) -> CBPeripheral? {
-        central.retrievePeripherals(withIdentifiers: [id]).first
+        discoveredPeripherals[id] ?? central.retrievePeripherals(withIdentifiers: [id]).first
     }
 
     // MARK: Scanning
@@ -68,6 +81,8 @@ final class BleCentral: NSObject {
             return
         }
         guard !isScanning else { return }
+
+        discoveredPeripherals.removeAll()
 
         let options: [String: Any] = [
             CBCentralManagerScanOptionAllowDuplicatesKey: true,
@@ -92,8 +107,7 @@ final class BleCentral: NSObject {
     func connect(to device: ScannedDevice) {
         stopScan()
 
-        let target = peripheral(for: device.id) ?? peripheral
-        guard let target else {
+        guard let target = peripheral(for: device.id) else {
             log("No peripheral handle for \(device.id)", level: .error)
             onConnectionState?(.failed)
             return
@@ -106,6 +120,14 @@ final class BleCentral: NSObject {
         target.delegate = self
         peripheral = target
         knownDevices[device.id] = device
+
+        if target.state == .connected {
+            log("Already connected to \(device.name ?? device.id.uuidString)")
+            onConnectionState?(.connected)
+            drainWriteQueue()
+            return
+        }
+
         onConnectionState?(.connecting)
         log("Connecting to \(device.name ?? device.id.uuidString)")
         central.connect(target, options: nil)
@@ -225,8 +247,13 @@ extension BleCentral: CBCentralManagerDelegate {
 
             if state == .poweredOn, self.shouldBeScanning, !self.isScanning {
                 self.startScan()
-            } else if state != .poweredOn, self.isScanning {
-                self.isScanning = false
+            } else if state != .poweredOn {
+                if self.isScanning {
+                    self.isScanning = false
+                }
+                if self.peripheral != nil {
+                    self.disconnect()
+                }
             }
         }
     }
@@ -247,6 +274,7 @@ extension BleCentral: CBCentralManagerDelegate {
             .map(\.uuidString) ?? []
 
         Task { @MainActor in
+            self.discoveredPeripherals[id] = peripheral
             let name = advertisedName ?? peripheralName
             let device = ScannedDevice(
                 id: id,
@@ -264,7 +292,7 @@ extension BleCentral: CBCentralManagerDelegate {
         Task { @MainActor in
             self.onLog?("Connected to \(id.uuidString); discovering services", .info)
             self.onConnectionState?(.connecting)
-            peripheral.discoverServices([CBUUID(string: ElkProtocol.serviceUUID)])
+            peripheral.discoverServices(BleCentral.elkServiceUUIDs)
         }
     }
 
@@ -277,6 +305,11 @@ extension BleCentral: CBCentralManagerDelegate {
         let description = error?.localizedDescription ?? "no error"
         Task { @MainActor in
             self.onLog?("Failed to connect to \(identifier.uuidString): \(description)", .error)
+            self.writeTimeoutTask?.cancel()
+            self.writeTimeoutTask = nil
+            self.writeQueue.removeAll()
+            self.writeInFlight = false
+            self.writeCharacteristic = nil
             self.peripheral = nil
             self.onConnectionState?(.failed)
         }
@@ -295,6 +328,9 @@ extension BleCentral: CBCentralManagerDelegate {
             } else {
                 self.onLog?("Disconnected from \(identifier.uuidString)", .info)
             }
+            self.writeTimeoutTask?.cancel()
+            self.writeTimeoutTask = nil
+            self.writeQueue.removeAll()
             self.writeInFlight = false
             self.writeCharacteristic = nil
             self.peripheral = nil
@@ -321,15 +357,15 @@ extension BleCentral: CBPeripheralDelegate {
             self.log("Services: \(services.joined(separator: ", "))")
 
             guard let service = peripheral.services?
-                .first(where: { $0.uuid == CBUUID(string: ElkProtocol.serviceUUID) })
+                .first(where: { BleCentral.elkServiceUUIDs.contains($0.uuid) })
             else {
-                self.onLog?("ELK service \(ElkProtocol.serviceUUID) not found", .error)
+                self.onLog?("ELK service not found", .error)
                 self.onConnectionState?(.failed)
                 return
             }
 
             peripheral.discoverCharacteristics(
-                [CBUUID(string: ElkProtocol.writeCharacteristicUUID)],
+                BleCentral.elkWriteCharacteristicUUIDs,
                 for: service
             )
             _ = identifier
@@ -343,7 +379,7 @@ extension BleCentral: CBPeripheralDelegate {
     ) {
         let characteristics = (service.characteristics ?? []).map(\.uuid.uuidString)
         let match = service.characteristics?
-            .first(where: { $0.uuid == CBUUID(string: ElkProtocol.writeCharacteristicUUID) })
+            .first(where: { BleCentral.elkWriteCharacteristicUUIDs.contains($0.uuid) })
         let description = error?.localizedDescription
 
         Task { @MainActor in
@@ -356,7 +392,7 @@ extension BleCentral: CBPeripheralDelegate {
             self.log("Characteristics: \(characteristics.joined(separator: ", "))")
 
             guard let match else {
-                self.onLog?("Write characteristic \(ElkProtocol.writeCharacteristicUUID) not found", .error)
+                self.onLog?("Write characteristic not found", .error)
                 self.onConnectionState?(.failed)
                 return
             }

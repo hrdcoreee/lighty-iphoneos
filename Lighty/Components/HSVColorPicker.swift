@@ -51,8 +51,6 @@ private struct SaturationValuePanel: View {
     let isEnabled: Bool
     let onChange: (Double, Double) -> Void
 
-    @State private var isDragging = false
-
     var body: some View {
         GeometryReader { geometry in
             let size = geometry.size
@@ -89,25 +87,22 @@ private struct SaturationValuePanel: View {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
                 guard isEnabled, size.width > 0, size.height > 0 else { return }
-                if !isDragging {
-                    let moved = abs(value.translation.width) >= PickerGesture.slop
-                        || abs(value.translation.height) >= PickerGesture.slop
-                    guard moved else { return }
-                    isDragging = true
-                }
+                let moved = abs(value.translation.width) >= PickerGesture.slop
+                    || abs(value.translation.height) >= PickerGesture.slop
+                guard moved else { return }
                 report(value.location, in: size)
             }
             .onEnded { value in
-                defer { isDragging = false }
                 // A press without movement is a tap; apply it on release.
-                guard !isDragging, isEnabled, size.width > 0, size.height > 0 else { return }
+                // A drag that completes also reports its final location.
+                guard isEnabled, size.width > 0, size.height > 0 else { return }
                 report(value.location, in: size)
             }
     }
 
     private func report(_ point: CGPoint, in size: CGSize) {
         let s = min(max(point.x / size.width, 0), 1)
-        let v = min(max(1 - point.y / size.height, 0), 1)
+        let v = min(max(1 - point.y / size.height, 0.05), 1)
         onChange(Double(s), Double(v))
     }
 }
@@ -116,8 +111,6 @@ private struct HueBar: View {
     let hue: Double
     let isEnabled: Bool
     let onHueChange: (Double) -> Void
-
-    @State private var isDragging = false
 
     private var spectrum: [Color] {
         stride(from: 0.0, through: 360.0, by: 60.0)
@@ -148,17 +141,13 @@ private struct HueBar: View {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
                 guard isEnabled, size.width > 0 else { return }
-                if !isDragging {
-                    let moved = abs(value.translation.width) >= PickerGesture.slop
-                        || abs(value.translation.height) >= PickerGesture.slop
-                    guard moved else { return }
-                    isDragging = true
-                }
+                let moved = abs(value.translation.width) >= PickerGesture.slop
+                    || abs(value.translation.height) >= PickerGesture.slop
+                guard moved else { return }
                 report(value.location, in: size)
             }
             .onEnded { value in
-                defer { isDragging = false }
-                guard !isDragging, isEnabled, size.width > 0 else { return }
+                guard isEnabled, size.width > 0 else { return }
                 report(value.location, in: size)
             }
     }

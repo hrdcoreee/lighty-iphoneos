@@ -8,6 +8,7 @@ struct DiagnosticsScreen: View {
     let strings: Strings
 
     @State private var copied = false
+    @State private var copyTask: Task<Void, Never>?
 
     var body: some View {
         List {
@@ -39,7 +40,13 @@ struct DiagnosticsScreen: View {
                 Menu {
                     Button {
                         UIPasteboard.general.string = log.report
-                        copied = true
+                        withAnimation { copied = true }
+                        copyTask?.cancel()
+                        copyTask = Task {
+                            try? await Task.sleep(nanoseconds: 2_000_000_000)
+                            guard !Task.isCancelled else { return }
+                            withAnimation { copied = false }
+                        }
                     } label: {
                         Label(strings.copyDiagnostics, systemImage: "doc.on.doc")
                     }
@@ -55,7 +62,7 @@ struct DiagnosticsScreen: View {
         }
         .overlay(alignment: .bottom) {
             if copied {
-                Text("Copied")
+                Text(strings.copied)
                     .font(.caption)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
